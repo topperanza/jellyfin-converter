@@ -137,6 +137,9 @@ DRY_RUN=0 DELETE=0 ./scripts/jellyfin_converter.sh /path/to/videos
 DELETE=1 ./scripts/jellyfin_converter.sh /path/to/videos
 ```
 
+- Prepare env vars first: copy `examples/env.dry-run.example` or `examples/env.hw-accel.example` to `.env.local` (or export them inline).
+- See the [usage guide with first run checklist](docs/usage.md) before disabling dry-run or enabling deletion.
+
 ---
 
 ## Environment Variables (Common)
