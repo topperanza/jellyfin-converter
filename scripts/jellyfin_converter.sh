@@ -19,6 +19,10 @@ VIDEO_FORMATS="avi|mp4|mov|wmv|flv|m4v|mpg|mpeg|vob|ts|m2ts|webm|asf|divx|3gp|og
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 
+source "$SCRIPT_DIR/lib/ffmpeg.sh"
+source "$SCRIPT_DIR/lib/media_filters.sh"
+source "$SCRIPT_DIR/lib/io.sh"
+
 SCAN_DIR=""
 OUTROOT="converted"
 LOG_DIR="${LOG_DIR:-$PROJECT_ROOT/logs}"  # Centralized log location (override with LOG_DIR=/path)
@@ -32,287 +36,10 @@ PARALLEL="${PARALLEL:-1}"     # Number of simultaneous conversions
 DRY_RUN="${DRY_RUN:-0}"       # 1 to test without converting
 SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-0}"  # 1 to skip delete confirmation (for automation)
 
-# Dependency checks
-need_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: Missing required command: $1 ($2)" >&2; exit 1; }; }
 need_cmd ffmpeg "install ffmpeg via your package manager"
 need_cmd ffprobe "install ffprobe via your package manager (often bundled with ffmpeg)"
 need_cmd find "install findutils/coreutils via your package manager"
 echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU drivers"
-
-# Codec compatibility checks
-is_codec_compatible_video() { case "$1" in h264|hevc|av1) return 0 ;; *) return 1 ;; esac; }
-is_codec_compatible_audio() { case "$1" in aac|ac3|eac3|mp3|flac|opus|dts) return 0 ;; *) return 1 ;; esac; }
-
-# Language mapping with English/Italian focus
-map_lang() {
-  local t="${1,,}"
-  case "$t" in
-    en|eng|english) echo "eng" ;;
-    it|ita|italian) echo "ita" ;;
-    de|deu|ger|german) echo "deu" ;;
-    fr|fra|fre|french) echo "fra" ;;
-    es|spa|spanish) echo "spa" ;;
-    pt|por|portuguese|br|ptbr|pt-br) echo "por" ;;
-    nl|nld|dut|dutch) echo "nld" ;;
-    pl|pol|polish) echo "pol" ;;
-    tr|tur|turkish) echo "tur" ;;
-    ru|rus|russian) echo "rus" ;;
-    ar|ara|arabic) echo "ara" ;;
-    ja|jpn|jp|japanese) echo "jpn" ;;
-    ko|kor|korean) echo "kor" ;;
-    zh|zho|chi|chinese|cn) echo "zho" ;;
-    *) echo "" ;;
-  esac
-}
-
-is_eng_or_ita() {
-  local lang="$1"
-  [[ "$lang" == "eng" || "$lang" == "ita" ]]
-}
-
-# Hardware acceleration detection
-encoder_present() { ffmpeg -hide_banner -encoders 2>/dev/null | grep -q "$1"; }
-
-detect_hw_accel() {
-  if [[ -n "${RESOLVED_HW:-}" ]]; then
-    echo "$RESOLVED_HW"
-    return
-  fi
-
-  local codec_enc_nvenc="h264_nvenc"
-  local codec_enc_qsv="h264_qsv"
-  local codec_enc_vaapi="h264_vaapi"
-
-  if [[ "$CODEC" == "hevc" ]]; then
-    codec_enc_nvenc="hevc_nvenc"
-    codec_enc_qsv="hevc_qsv"
-    codec_enc_vaapi="hevc_vaapi"
-  fi
-
-  case "$HW_ACCEL" in
-    auto)
-      if encoder_present "$codec_enc_nvenc"; then
-        RESOLVED_HW="nvenc"
-      elif encoder_present "$codec_enc_qsv"; then
-        RESOLVED_HW="qsv"
-      elif encoder_present "$codec_enc_vaapi"; then
-        RESOLVED_HW="vaapi"
-      else
-        RESOLVED_HW="none"
-      fi
-      ;;
-    nvenc)
-      if encoder_present "$codec_enc_nvenc"; then
-        RESOLVED_HW="nvenc"
-      else
-        RESOLVED_HW="none"
-      fi
-      ;;
-    qsv)
-      if encoder_present "$codec_enc_qsv"; then
-        RESOLVED_HW="qsv"
-      else
-        RESOLVED_HW="none"
-      fi
-      ;;
-    vaapi)
-      if encoder_present "$codec_enc_vaapi"; then
-        RESOLVED_HW="vaapi"
-      else
-        RESOLVED_HW="none"
-      fi
-      ;;
-    none)
-      RESOLVED_HW="none"
-      ;;
-    *)
-      RESOLVED_HW="none"
-      ;;
-  esac
-
-  echo "$RESOLVED_HW"
-}
-
-preflight_hw_encoder() {
-  # Only verify when user explicitly selected a hardware accelerator
-  if [[ "$HW_ACCEL" == "auto" || "$HW_ACCEL" == "none" ]]; then
-    return
-  fi
-
-  local accel; accel=$(detect_hw_accel)
-  local -a candidates=()
-
-  case "$accel" in
-    nvenc)
-      if [[ "$CODEC" == "hevc" ]]; then
-        candidates=("hevc_nvenc")
-      else
-        candidates=("h264_nvenc")
-      fi
-      ;;
-    qsv)
-      if [[ "$CODEC" == "hevc" ]]; then
-        candidates=("hevc_qsv")
-      else
-        candidates=("h264_qsv")
-      fi
-      ;;
-    vaapi)
-      if [[ "$CODEC" == "hevc" ]]; then
-        candidates=("hevc_vaapi" "h264_vaapi")
-      else
-        candidates=("h264_vaapi")
-      fi
-      ;;
-    *)
-      return
-      ;;
-  esac
-
-  local encoder_found=0
-  for enc in "${candidates[@]}"; do
-    if encoder_present "$enc"; then
-      encoder_found=1
-      break
-    fi
-  done
-
-  if [[ "$encoder_found" -eq 0 ]]; then
-    echo "WARNING: HW_ACCEL=$HW_ACCEL requested, but encoders (${candidates[*]}) are unavailable. Falling back to software (HW_ACCEL=none)."
-    RESOLVED_HW="none"
-  else
-    RESOLVED_HW="$accel"
-  fi
-}
-
-check_write_permissions() {
-  local output_dir="$SCAN_DIR/$OUTROOT"
-  local logs_dir="$LOG_DIR"
-  local tmp_file="$output_dir/.perm_test.$$"
-  local log_probe="${LOGFILE}.permcheck"
-
-  mkdir -p "$output_dir" "$logs_dir" || {
-    echo "ERROR: Cannot create output or log directories: $output_dir, $logs_dir (check permissions or disk space)"
-    exit 3
-  }
-
-  if ! touch "$tmp_file" "$log_probe" 2>/dev/null; then
-    echo "ERROR: Cannot write to $output_dir or $logs_dir (check permissions or available space)"
-    exit 3
-  fi
-
-  if ! rm -f "$tmp_file" "$log_probe" 2>/dev/null; then
-    echo "ERROR: Cannot clean up temp files in $output_dir or $logs_dir (check permissions)"
-    exit 3
-  fi
-}
-
-# Get optimal CRF based on resolution
-get_optimal_crf() {
-  local src="$1"
-  local height=$(ffprobe -v error -select_streams v:0 \
-    -show_entries stream=height -of csv=p=0 "$src" 2>/dev/null || echo "720")
-  
-  if [[ "$height" -ge 2160 ]]; then
-    echo 22  # 4K
-  elif [[ "$height" -ge 1080 ]]; then
-    echo 20  # 1080p
-  elif [[ "$height" -ge 720 ]]; then
-    echo 21  # 720p
-  else
-    echo 23  # SD
-  fi
-}
-
-# Logging
-log_conversion() {
-  local src="$1" out="$2" method="$3"
-  local size_before size_after savings
-  size_before=$(stat -f%z "$src" 2>/dev/null || stat -c%s "$src" 2>/dev/null || echo 0)
-  size_after=$(stat -f%z "$out" 2>/dev/null || stat -c%s "$out" 2>/dev/null || echo 0)
-  
-  if [[ "$size_before" -gt 0 ]]; then
-    savings=$(( (size_before - size_after) * 100 / size_before ))
-  else
-    savings=0
-  fi
-  
-  printf "%s | %s | %s → %s | %d%% savings\n" \
-    "$(date '+%Y-%m-%d %H:%M:%S')" "$method" "$src" "$out" "$savings" >> "$LOGFILE"
-}
-
-# Interactive folder selection
-select_folder() {
-  local default_path="${1:-.}"
-  
-  echo "════════════════════════════════════════"
-  echo "  Folder Selection"
-  echo "════════════════════════════════════════"
-  echo ""
-  echo "Current directory: $(pwd)"
-  echo ""
-  echo "Enter the folder to process:"
-  echo "  - Full path (e.g., /media/videos)"
-  echo "  - Relative path (e.g., ./movies)"
-  echo "  - Press Enter to use current directory"
-  echo ""
-  read -r -p "Folder path: " input_path
-  
-  # Use current directory if empty
-  if [[ -z "$input_path" ]]; then
-    input_path="$default_path"
-  fi
-  
-  # Expand ~ and resolve path
-  input_path="${input_path/#\~/$HOME}"
-  
-  # Check if path exists
-  if [[ ! -d "$input_path" ]]; then
-    echo ""
-    echo "ERROR: Directory does not exist: $input_path"
-    echo ""
-    read -r -p "Try again? (y/n): " retry
-    if [[ "$retry" =~ ^[Yy] ]]; then
-      select_folder "$default_path"
-      return
-    else
-      exit 1
-    fi
-  fi
-  
-  # Convert to absolute path
-  SCAN_DIR=$(cd "$input_path" && pwd)
-  
-  # Count video files
-  local video_count=0
-  local -a formats=(${VIDEO_FORMATS//|/ })
-  for fmt in "${formats[@]}"; do
-    video_count=$((video_count + $(find "$SCAN_DIR" -type f -iname "*.${fmt}" 2>/dev/null | wc -l)))
-  done
-  
-  echo ""
-  echo "Selected: $SCAN_DIR"
-  echo "Found: $video_count video file(s)"
-  echo ""
-  
-  if [[ "$video_count" -eq 0 ]]; then
-    echo "WARNING: No supported video files found in this directory."
-    echo "Supported formats: ${VIDEO_FORMATS//|/, }"
-    echo ""
-    read -r -p "Continue anyway? (y/n): " continue_empty
-    if [[ ! "$continue_empty" =~ ^[Yy] ]]; then
-      exit 0
-    fi
-  fi
-  
-  read -r -p "Proceed with this folder? (y/n): " confirm
-  if [[ ! "$confirm" =~ ^[Yy] ]]; then
-    echo "Cancelled."
-    exit 0
-  fi
-  
-  echo ""
-}
 
 process_one() {
   local src="$1"
@@ -360,76 +87,16 @@ process_one() {
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
 
-  # Analyze audio streams for language filtering
-  # Get both language and title info to detect commentary tracks
   local audio_info=$(ffprobe -v error -select_streams a -show_entries \
     stream=index:stream_tags=language,title -of csv=p=0 "$src" 2>/dev/null || echo "")
-  
+
   local -a audio_map_args=()
-  local -a russian_tracks=()  # Store Russian tracks as fallback
+  local -a russian_tracks=()
   local has_eng_or_ita=0
   local has_non_russian=0
-  local audio_idx=0
-  
-  if [[ -n "$audio_info" ]]; then
-    # First pass: identify what we have
-    while IFS=, read -r idx lang title; do
-      local mapped_lang=$(map_lang "$lang")
-      local title_lower="${title,,}"
-      
-      # Check if this is a commentary track
-      local is_commentary=0
-      if [[ "$title_lower" =~ (commentary|commento|kommentar|comentario) ]]; then
-        is_commentary=1
-      fi
-      
-      if [[ "$is_commentary" -eq 1 ]]; then
-        audio_map_args+=("-map" "0:a:$audio_idx")
-        echo "  → Keeping audio track $audio_idx: commentary ($mapped_lang)"
-      elif is_eng_or_ita "$mapped_lang"; then
-        audio_map_args+=("-map" "0:a:$audio_idx")
-        has_eng_or_ita=1
-        has_non_russian=1
-        echo "  → Keeping audio track $audio_idx: $mapped_lang"
-      elif [[ "$mapped_lang" == "rus" ]]; then
-        # Store Russian tracks for potential fallback
-        russian_tracks+=("$audio_idx")
-        echo "  ⚠ Russian track $audio_idx (will skip if other languages available)"
-      elif [[ -n "$mapped_lang" ]]; then
-        # Any other known language - prefer over Russian
-        audio_map_args+=("-map" "0:a:$audio_idx")
-        has_non_russian=1
-        echo "  → Keeping audio track $audio_idx: $mapped_lang (non-Russian)"
-      elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-        # Unknown/undefined language - keep first one in case it's original
-        if [[ "$audio_idx" -eq 0 ]]; then
-          audio_map_args+=("-map" "0:a:$audio_idx")
-          has_non_russian=1
-          echo "  → Keeping audio track $audio_idx: unknown/original"
-        fi
-      fi
-      ((audio_idx++))
-    done <<< "$audio_info"
-  fi
-  
-  # If no eng/ita and no other non-Russian languages found, use Russian as fallback
-  if [[ "$has_eng_or_ita" -eq 0 && "$has_non_russian" -eq 0 && "${#russian_tracks[@]}" -gt 0 ]]; then
-    echo "  → No non-Russian audio found, keeping Russian track(s) as fallback"
-    for rus_idx in "${russian_tracks[@]}"; do
-      audio_map_args+=("-map" "0:a:$rus_idx")
-      echo "  → Keeping audio track $rus_idx: rus (fallback)"
-    done
-  elif [[ "${#russian_tracks[@]}" -gt 0 && "$has_non_russian" -eq 1 ]]; then
-    for rus_idx in "${russian_tracks[@]}"; do
-      echo "  × Skipping audio track $rus_idx: rus (other languages available)"
-    done
-  fi
-  
-  # If nothing was selected at all, keep all audio (safety fallback)
-  if [[ "${#audio_map_args[@]}" -eq 0 ]]; then
-    echo "  → No audio tracks selected, keeping all audio tracks"
-    audio_map_args=("-map" "0:a?")
-  fi
+
+  build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
+  finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
 
   # Get source directory for finding subtitles
   local src_full_dir; src_full_dir="$(dirname "$src")"
@@ -437,51 +104,12 @@ process_one() {
   # Collect external subtitles (English/Italian only)
   local -a sub_inputs=() sub_langs=() sub_forced=() sub_files=()
   local sub_idx=0
-  
-  add_sub() {
-    local subfile="$1"
-    local fname; fname="$(basename "$subfile")"
-    local rest="${fname#${base}}"; rest="${rest#.}"; rest="${rest%.*}"
-    local lang="" forced=0
-    
-    # Check for commentary in filename
-    local rest_lower="${rest,,}"
-    local is_commentary=0
-    if [[ "$rest_lower" =~ (commentary|commento|kommentar|comentario) ]]; then
-      is_commentary=1
-    fi
-    
-    IFS='._- ' read -r -a tokens <<< "$rest"
-    for tk in "${tokens[@]}"; do
-      [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
-      [[ "$tk" =~ ^(forced|forzato|forzati|zwangs|obligatoire)$ ]] && forced=1
-    done
-    
-    # Keep if commentary OR if English/Italian
-    if [[ "$is_commentary" -eq 1 ]]; then
-      echo "  + sub: $subfile  commentary lang=${lang:-unknown} forced=$forced"
-      sub_inputs+=("-i" "$subfile")
-      sub_langs+=("${lang:-und}")
-      sub_forced+=("$forced")
-      sub_files+=("$subfile")
-      ((sub_idx++))
-    elif is_eng_or_ita "$lang"; then
-      echo "  + sub: $subfile  lang=$lang forced=$forced"
-      sub_inputs+=("-i" "$subfile")
-      sub_langs+=("$lang")
-      sub_forced+=("$forced")
-      sub_files+=("$subfile")
-      ((sub_idx++))
-    else
-      echo "  × skipping sub: $subfile  lang=${lang:-unknown} (not eng/ita/commentary)"
-    fi
-  }
-  
+
   (
     shopt -s nullglob
     for ext in srt ass sub; do
       for s in "$src_full_dir/$base".*."$ext" "$src_full_dir/$base"."$ext"; do
-        [[ -f "$s" ]] && add_sub "$s"
+        [[ -f "$s" ]] && collect_subtitle "$s" "$base" sub_inputs sub_langs sub_forced sub_files sub_idx
       done
     done
   )
@@ -652,7 +280,8 @@ process_one() {
 
 # Export functions for parallel processing
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
-export -f detect_hw_accel get_optimal_crf log_conversion
+export -f detect_hw_accel get_optimal_crf log_conversion encoder_present
+export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title
 export SCAN_DIR OUTROOT LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
 # Interactive folder selection (unless path provided as argument)
