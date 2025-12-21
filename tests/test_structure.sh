@@ -36,5 +36,7 @@ SKIP_DELETE_CONFIRM=1 \
 test -d "$WORKDIR/converted"
 test -f "$ROOT/logs/conversion.log"
 test -f "$ROOT/logs/.processed"
+test -f "$ROOT/examples/env.dry-run.example"
+test -f "$ROOT/examples/env.hw-accel.example"
 
 rm -f "$ROOT/logs/conversion.log" "$ROOT/logs/.processed"
