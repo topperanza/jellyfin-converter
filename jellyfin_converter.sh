@@ -67,19 +67,80 @@ is_eng_or_ita() {
 }
 
 # Hardware acceleration detection
+encoder_present() { ffmpeg -hide_banner -encoders 2>/dev/null | grep -q "$1"; }
+
 detect_hw_accel() {
+  if [[ -n "${RESOLVED_HW:-}" ]]; then
+    echo "$RESOLVED_HW"
+    return
+  fi
+
   if [[ "$HW_ACCEL" == "auto" ]]; then
-    if ffmpeg -hide_banner -encoders 2>/dev/null | grep -q "h264_nvenc"; then
-      echo "nvenc"
-    elif ffmpeg -hide_banner -encoders 2>/dev/null | grep -q "h264_qsv"; then
-      echo "qsv"
-    elif ffmpeg -hide_banner -encoders 2>/dev/null | grep -q "h264_vaapi"; then
-      echo "vaapi"
+    if encoder_present "h264_nvenc"; then
+      RESOLVED_HW="nvenc"
+    elif encoder_present "h264_qsv"; then
+      RESOLVED_HW="qsv"
+    elif encoder_present "h264_vaapi"; then
+      RESOLVED_HW="vaapi"
     else
-      echo "none"
+      RESOLVED_HW="none"
     fi
   else
-    echo "$HW_ACCEL"
+    RESOLVED_HW="$HW_ACCEL"
+  fi
+
+  echo "$RESOLVED_HW"
+}
+
+preflight_hw_encoder() {
+  # Only verify when user explicitly selected a hardware accelerator
+  if [[ "$HW_ACCEL" == "auto" || "$HW_ACCEL" == "none" ]]; then
+    return
+  fi
+
+  local accel; accel=$(detect_hw_accel)
+  local -a candidates=()
+
+  case "$accel" in
+    nvenc)
+      if [[ "$CODEC" == "hevc" ]]; then
+        candidates=("hevc_nvenc")
+      else
+        candidates=("h264_nvenc")
+      fi
+      ;;
+    qsv)
+      if [[ "$CODEC" == "hevc" ]]; then
+        candidates=("hevc_qsv")
+      else
+        candidates=("h264_qsv")
+      fi
+      ;;
+    vaapi)
+      if [[ "$CODEC" == "hevc" ]]; then
+        candidates=("hevc_vaapi" "h264_vaapi")
+      else
+        candidates=("h264_vaapi")
+      fi
+      ;;
+    *)
+      return
+      ;;
+  esac
+
+  local encoder_found=0
+  for enc in "${candidates[@]}"; do
+    if encoder_present "$enc"; then
+      encoder_found=1
+      break
+    fi
+  done
+
+  if [[ "$encoder_found" -eq 0 ]]; then
+    echo "WARNING: HW_ACCEL=$HW_ACCEL requested, but encoders (${candidates[*]}) are unavailable. Falling back to software (HW_ACCEL=none)."
+    RESOLVED_HW="none"
+  else
+    RESOLVED_HW="$accel"
   fi
 }
 
@@ -524,7 +585,7 @@ process_one() {
 # Export functions for parallel processing
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
 export -f detect_hw_accel get_optimal_crf log_conversion
-export SCAN_DIR OUTROOT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
+export SCAN_DIR OUTROOT CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
 # Interactive folder selection (unless path provided as argument)
 if [[ $# -gt 0 ]]; then
@@ -545,6 +606,8 @@ DONE_FILE="$SCAN_DIR/$OUTROOT/.processed"
 mkdir -p "$SCAN_DIR/$OUTROOT"
 [[ -f "$DONE_FILE" ]] || touch "$DONE_FILE"
 
+preflight_hw_encoder
+
 echo "════════════════════════════════════════"
 echo "  Jellyfin Video → MKV Converter"
 echo "════════════════════════════════════════"
@@ -555,7 +618,7 @@ echo "Supported formats: ${VIDEO_FORMATS//|/, }"
 echo ""
 echo "Settings:"
 echo "  Codec: $CODEC | CRF: $CRF | Preset: $PRESET"
-echo "  HW Accel: $HW_ACCEL | Parallel: $PARALLEL"
+echo "  HW Accel: ${RESOLVED_HW:-$HW_ACCEL} | Parallel: $PARALLEL"
 echo "  Delete originals: $DELETE | Dry run: $DRY_RUN"
 echo "  Languages: English + Italian + Commentary (prefer any over Russian)"
 echo "════════════════════════════════════════"
