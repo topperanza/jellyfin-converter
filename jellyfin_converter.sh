@@ -589,7 +589,18 @@ build_find_pattern() {
   echo "${patterns[@]}"
 }
 
+display_patterns() {
+  local -a patterns=()
+  IFS='|' read -ra formats <<< "$VIDEO_FORMATS"
+  for fmt in "${formats[@]}"; do
+    patterns+=("*.${fmt}")
+  done
+  echo "${patterns[*]}"
+}
+
 # Process files
+echo "Normalized scan root: $SCAN_DIR"
+echo "Filename patterns: $(display_patterns)"
 if command -v parallel >/dev/null 2>&1 && [[ "$PARALLEL" -gt 1 ]]; then
   echo "Using GNU Parallel with $PARALLEL jobs"
   find "$SCAN_DIR" -type f \( $(build_find_pattern) \) -print0 | \
