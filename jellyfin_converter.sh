@@ -26,6 +26,7 @@ OVERWRITE="${OVERWRITE:-0}"   # 1 to overwrite existing outputs
 DELETE="${DELETE:-1}"         # 1 to delete originals after success
 PARALLEL="${PARALLEL:-1}"     # Number of simultaneous conversions
 DRY_RUN="${DRY_RUN:-0}"       # 1 to test without converting
+SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-0}"  # 1 to skip delete confirmation (for automation)
 
 # Dependency checks
 need_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: Missing required command: $1" >&2; exit 1; }; }
@@ -559,6 +560,17 @@ echo "  Languages: English + Italian + Commentary (prefer any over Russian)"
 echo "════════════════════════════════════════"
 echo ""
 echo "Mode: dry=$DRY_RUN delete=$DELETE parallel=$PARALLEL"
+
+# Confirm destructive delete when not a dry run (can bypass with SKIP_DELETE_CONFIRM=1)
+if [[ "$DELETE" == "1" && "$DRY_RUN" == "0" && "$SKIP_DELETE_CONFIRM" != "1" ]]; then
+  echo "WARNING: Originals will be deleted after successful conversion."
+  echo "Set SKIP_DELETE_CONFIRM=1 to bypass this prompt for automated runs."
+  read -r -p "Continue and delete originals? (y/N): " delete_confirm
+  if [[ ! "$delete_confirm" =~ ^[Yy]$ ]]; then
+    echo "Delete not confirmed. Exiting."
+    exit 2
+  fi
+fi
 
 # Build find command for all video formats
 build_find_pattern() {
