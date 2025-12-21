@@ -29,10 +29,11 @@ DRY_RUN="${DRY_RUN:-0}"       # 1 to test without converting
 SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-0}"  # 1 to skip delete confirmation (for automation)
 
 # Dependency checks
-need_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: Missing required command: $1" >&2; exit 1; }; }
-need_cmd ffmpeg
-need_cmd ffprobe
-need_cmd find
+need_cmd() { command -v "$1" >/dev/null 2>&1 || { echo "ERROR: Missing required command: $1 ($2)" >&2; exit 1; }; }
+need_cmd ffmpeg "install ffmpeg via your package manager"
+need_cmd ffprobe "install ffprobe via your package manager (often bundled with ffmpeg)"
+need_cmd find "install findutils/coreutils via your package manager"
+echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU drivers"
 
 # Codec compatibility checks
 is_codec_compatible_video() { case "$1" in h264|hevc|av1) return 0 ;; *) return 1 ;; esac; }
