@@ -16,8 +16,12 @@ IFS=$'\n\t'
 VIDEO_FORMATS="avi|mp4|mov|wmv|flv|m4v|mpg|mpeg|vob|ts|m2ts|webm|asf|divx|3gp|ogv"
 
 # Configuration
+SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+
 SCAN_DIR=""
 OUTROOT="converted"
+LOG_DIR="${LOG_DIR:-$PROJECT_ROOT/logs}"  # Centralized log location (override with LOG_DIR=/path)
 CRF="${CRF:-20}"              # Video quality (lower=better, 18-28 recommended)
 PRESET="${PRESET:-medium}"    # x264 preset: ultrafast|fast|medium|slow|veryslow
 CODEC="${CODEC:-h264}"        # h264 or hevc (hevc saves ~40% space)
@@ -182,22 +186,23 @@ preflight_hw_encoder() {
 }
 
 check_write_permissions() {
-  local target="$SCAN_DIR/$OUTROOT"
-  local tmp_file="$target/.perm_test.$$"
+  local output_dir="$SCAN_DIR/$OUTROOT"
+  local logs_dir="$LOG_DIR"
+  local tmp_file="$output_dir/.perm_test.$$"
   local log_probe="${LOGFILE}.permcheck"
 
-  mkdir -p "$target" || {
-    echo "ERROR: Cannot create output directory: $target (check permissions or disk space)"
+  mkdir -p "$output_dir" "$logs_dir" || {
+    echo "ERROR: Cannot create output or log directories: $output_dir, $logs_dir (check permissions or disk space)"
     exit 3
   }
 
   if ! touch "$tmp_file" "$log_probe" 2>/dev/null; then
-    echo "ERROR: Cannot write to $target (check permissions or available space)"
+    echo "ERROR: Cannot write to $output_dir or $logs_dir (check permissions or available space)"
     exit 3
   fi
 
   if ! rm -f "$tmp_file" "$log_probe" 2>/dev/null; then
-    echo "ERROR: Cannot clean up temp files in $target (check permissions)"
+    echo "ERROR: Cannot clean up temp files in $output_dir or $logs_dir (check permissions)"
     exit 3
   fi
 }
@@ -648,7 +653,7 @@ process_one() {
 # Export functions for parallel processing
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
 export -f detect_hw_accel get_optimal_crf log_conversion
-export SCAN_DIR OUTROOT CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
+export SCAN_DIR OUTROOT LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
 # Interactive folder selection (unless path provided as argument)
 if [[ $# -gt 0 ]]; then
@@ -663,10 +668,10 @@ else
 fi
 
 # Now set up log files after SCAN_DIR is determined
-LOGFILE="$SCAN_DIR/$OUTROOT/conversion.log"
-DONE_FILE="$SCAN_DIR/$OUTROOT/.processed"
+LOGFILE="$LOG_DIR/conversion.log"
+DONE_FILE="$LOG_DIR/.processed"
 
-mkdir -p "$SCAN_DIR/$OUTROOT"
+mkdir -p "$SCAN_DIR/$OUTROOT" "$LOG_DIR"
 [[ -f "$DONE_FILE" ]] || touch "$DONE_FILE"
 
 check_write_permissions
@@ -715,7 +720,7 @@ build_find_pattern() {
   done
   # Remove last -o
   unset 'patterns[-1]'
-  echo "${patterns[@]}"
+  printf '%s\n' "${patterns[@]}"
 }
 
 display_patterns() {

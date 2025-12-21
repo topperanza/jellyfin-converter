@@ -1,0 +1,4 @@
+# Generated artifacts
+logs/conversion.log
+logs/.processed
+converted/
