@@ -6,6 +6,16 @@ This project is intentionally conservative: it prioritizes **data safety, clarit
 
 ---
 
+## Repository Layout
+
+- `scripts/` — main entrypoint `jellyfin_converter.sh`
+- `docs/` — user/operator guides and architecture notes
+- `examples/` — sample env files and minimal invocations
+- `config/` — default encoding and language profiles
+- `logs/` — centralized conversion log + processed marker
+
+---
+
 ## What This Script Does
 
 At a high level, the script:
@@ -115,16 +125,16 @@ Hardware acceleration requires proper drivers and configuration.
 ## Usage (Basic)
 
 ```bash
-chmod +x jellyfin_converter.sh
+chmod +x scripts/jellyfin_converter.sh
 
 # Dry run (safe)
-DRY_RUN=1 DELETE=0 ./jellyfin_converter.sh /path/to/videos
+DRY_RUN=1 DELETE=0 ./scripts/jellyfin_converter.sh /path/to/videos
 
 # Real run, keep originals
-DRY_RUN=0 DELETE=0 ./jellyfin_converter.sh /path/to/videos
+DRY_RUN=0 DELETE=0 ./scripts/jellyfin_converter.sh /path/to/videos
 
 # Real run, delete originals after success (advanced)
-DELETE=1 ./jellyfin_converter.sh /path/to/videos
+DELETE=1 ./scripts/jellyfin_converter.sh /path/to/videos
 ```
 
 ---
