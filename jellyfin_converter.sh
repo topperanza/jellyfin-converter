@@ -559,6 +559,10 @@ echo "  Delete originals: $DELETE | Dry run: $DRY_RUN"
 echo "  Languages: English + Italian + Commentary (prefer any over Russian)"
 echo "════════════════════════════════════════"
 echo ""
+if [[ "$DRY_RUN" == "0" ]]; then
+  echo "Tip: For first-time runs, set DRY_RUN=1 to preview actions without converting."
+  echo ""
+fi
 echo "Mode: dry=$DRY_RUN delete=$DELETE parallel=$PARALLEL"
 
 # Confirm destructive delete when not a dry run (can bypass with SKIP_DELETE_CONFIRM=1)
