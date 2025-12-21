@@ -38,6 +38,25 @@ check_write_permissions() {
   fi
 }
 
+build_find_pattern() {
+  local -a patterns=()
+  IFS='|' read -ra formats <<< "$VIDEO_FORMATS"
+  for fmt in "${formats[@]}"; do
+    patterns+=("-iname" "*.${fmt}" "-o")
+  done
+  unset 'patterns[-1]'
+  printf '%s\n' "${patterns[@]}"
+}
+
+display_patterns() {
+  local -a patterns=()
+  IFS='|' read -ra formats <<< "$VIDEO_FORMATS"
+  for fmt in "${formats[@]}"; do
+    patterns+=("*.${fmt}")
+  done
+  echo "${patterns[*]}"
+}
+
 select_folder() {
   local default_path="${1:-.}"
 

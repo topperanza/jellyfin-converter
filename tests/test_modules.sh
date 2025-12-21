@@ -9,8 +9,11 @@ cleanup() {
 }
 trap cleanup EXIT
 
+VIDEO_FORMATS="mp4|mkv|avi"
+
 source "$ROOT/scripts/lib/media_filters.sh"
 source "$ROOT/scripts/lib/ffmpeg.sh"
+source "$ROOT/scripts/lib/io.sh"
 
 cat >"$TMP_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
@@ -50,3 +53,7 @@ collect_subtitle "/tmp/sample.base.commentary.srt" "sample.base" sub_inputs sub_
 [[ "$(get_optimal_crf "$TMP_BIN/file.uhd")" == "22" ]]
 [[ "$(get_optimal_crf "$TMP_BIN/file.hd")" == "20" ]]
 [[ "$(get_optimal_crf "$TMP_BIN/file.sd")" == "23" ]]
+
+find_pattern_output="$(build_find_pattern)"
+[[ "$find_pattern_output" == *"-iname"*".mp4"*"-o"*"mkv"*"-o"* ]]
+[[ "$(display_patterns)" == "*.mp4 *.mkv *.avi" ]]

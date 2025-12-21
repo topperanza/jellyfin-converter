@@ -340,27 +340,6 @@ if [[ "$DELETE" == "1" && "$DRY_RUN" == "0" && "$SKIP_DELETE_CONFIRM" != "1" ]];
   fi
 fi
 
-# Build find command for all video formats
-build_find_pattern() {
-  local -a patterns=()
-  IFS='|' read -ra formats <<< "$VIDEO_FORMATS"
-  for fmt in "${formats[@]}"; do
-    patterns+=("-iname" "*.${fmt}" "-o")
-  done
-  # Remove last -o
-  unset 'patterns[-1]'
-  printf '%s\n' "${patterns[@]}"
-}
-
-display_patterns() {
-  local -a patterns=()
-  IFS='|' read -ra formats <<< "$VIDEO_FORMATS"
-  for fmt in "${formats[@]}"; do
-    patterns+=("*.${fmt}")
-  done
-  echo "${patterns[*]}"
-}
-
 # Process files
 echo "Normalized scan root: $SCAN_DIR"
 echo "Filename patterns: $(display_patterns)"
