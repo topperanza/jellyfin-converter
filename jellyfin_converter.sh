@@ -75,19 +75,56 @@ detect_hw_accel() {
     return
   fi
 
-  if [[ "$HW_ACCEL" == "auto" ]]; then
-    if encoder_present "h264_nvenc"; then
-      RESOLVED_HW="nvenc"
-    elif encoder_present "h264_qsv"; then
-      RESOLVED_HW="qsv"
-    elif encoder_present "h264_vaapi"; then
-      RESOLVED_HW="vaapi"
-    else
-      RESOLVED_HW="none"
-    fi
-  else
-    RESOLVED_HW="$HW_ACCEL"
+  local codec_enc_nvenc="h264_nvenc"
+  local codec_enc_qsv="h264_qsv"
+  local codec_enc_vaapi="h264_vaapi"
+
+  if [[ "$CODEC" == "hevc" ]]; then
+    codec_enc_nvenc="hevc_nvenc"
+    codec_enc_qsv="hevc_qsv"
+    codec_enc_vaapi="hevc_vaapi"
   fi
+
+  case "$HW_ACCEL" in
+    auto)
+      if encoder_present "$codec_enc_nvenc"; then
+        RESOLVED_HW="nvenc"
+      elif encoder_present "$codec_enc_qsv"; then
+        RESOLVED_HW="qsv"
+      elif encoder_present "$codec_enc_vaapi"; then
+        RESOLVED_HW="vaapi"
+      else
+        RESOLVED_HW="none"
+      fi
+      ;;
+    nvenc)
+      if encoder_present "$codec_enc_nvenc"; then
+        RESOLVED_HW="nvenc"
+      else
+        RESOLVED_HW="none"
+      fi
+      ;;
+    qsv)
+      if encoder_present "$codec_enc_qsv"; then
+        RESOLVED_HW="qsv"
+      else
+        RESOLVED_HW="none"
+      fi
+      ;;
+    vaapi)
+      if encoder_present "$codec_enc_vaapi"; then
+        RESOLVED_HW="vaapi"
+      else
+        RESOLVED_HW="none"
+      fi
+      ;;
+    none)
+      RESOLVED_HW="none"
+      ;;
+    *)
+      RESOLVED_HW="none"
+      ;;
+  esac
 
   echo "$RESOLVED_HW"
 }
@@ -543,8 +580,13 @@ process_one() {
       fi
       ;;
     vaapi)
-      encode_args=(-vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -qp "$use_crf")
-      echo "→ Using VA-API (H.264)"
+      if [[ "$CODEC" == "hevc" ]]; then
+        encode_args=(-vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -qp "$use_crf")
+        echo "→ Using VA-API (HEVC)"
+      else
+        encode_args=(-vaapi_device /dev/dri/renderD128 -c:v h264_vaapi -qp "$use_crf")
+        echo "→ Using VA-API (H.264)"
+      fi
       ;;
     *)
       if [[ "$CODEC" == "hevc" ]]; then
