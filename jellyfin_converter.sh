@@ -558,6 +558,7 @@ echo "  Delete originals: $DELETE | Dry run: $DRY_RUN"
 echo "  Languages: English + Italian + Commentary (prefer any over Russian)"
 echo "════════════════════════════════════════"
 echo ""
+echo "Mode: dry=$DRY_RUN delete=$DELETE parallel=$PARALLEL"
 
 # Build find command for all video formats
 build_find_pattern() {
