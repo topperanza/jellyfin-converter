@@ -24,17 +24,114 @@ source "$SCRIPT_DIR/lib/media_filters.sh"
 source "$SCRIPT_DIR/lib/io.sh"
 
 SCAN_DIR=""
-OUTROOT="converted"
-LOG_DIR="${LOG_DIR:-$PROJECT_ROOT/logs}"  # Centralized log location (override with LOG_DIR=/path)
-CRF="${CRF:-20}"              # Video quality (lower=better, 18-28 recommended)
-PRESET="${PRESET:-medium}"    # x264 preset: ultrafast|fast|medium|slow|veryslow
-CODEC="${CODEC:-h264}"        # h264 or hevc (hevc saves ~40% space)
-HW_ACCEL="${HW_ACCEL:-auto}"  # auto|nvenc|qsv|vaapi|none
-OVERWRITE="${OVERWRITE:-0}"   # 1 to overwrite existing outputs
-DELETE="${DELETE:-1}"         # 1 to delete originals after success
-PARALLEL="${PARALLEL:-1}"     # Number of simultaneous conversions
-DRY_RUN="${DRY_RUN:-0}"       # 1 to test without converting
-SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-0}"  # 1 to skip delete confirmation (for automation)
+DEFAULT_OUTROOT="converted"
+DEFAULT_LOG_DIR="$PROJECT_ROOT/logs"
+DEFAULT_CRF=20
+DEFAULT_PRESET="medium"
+DEFAULT_CODEC="h264"
+DEFAULT_HW_ACCEL="auto"
+DEFAULT_OVERWRITE=0
+DEFAULT_DELETE=1
+DEFAULT_PARALLEL=1
+DEFAULT_DRY_RUN=0
+DEFAULT_SKIP_DELETE_CONFIRM=0
+
+OUTROOT="${OUTROOT:-$DEFAULT_OUTROOT}"
+LOG_DIR="${LOG_DIR:-$DEFAULT_LOG_DIR}"  # Centralized log location (override with LOG_DIR=/path)
+CRF="${CRF:-$DEFAULT_CRF}"              # Video quality (lower=better, 18-28 recommended)
+PRESET="${PRESET:-$DEFAULT_PRESET}"    # x264 preset: ultrafast|fast|medium|slow|veryslow
+CODEC="${CODEC:-$DEFAULT_CODEC}"        # h264 or hevc (hevc saves ~40% space)
+HW_ACCEL="${HW_ACCEL:-$DEFAULT_HW_ACCEL}"  # auto|nvenc|qsv|vaapi|none
+OVERWRITE="${OVERWRITE:-$DEFAULT_OVERWRITE}"   # 1 to overwrite existing outputs
+DELETE="${DELETE:-$DEFAULT_DELETE}"         # 1 to delete originals after success
+PARALLEL="${PARALLEL:-$DEFAULT_PARALLEL}"     # Number of simultaneous conversions
+DRY_RUN="${DRY_RUN:-$DEFAULT_DRY_RUN}"       # 1 to test without converting
+SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-$DEFAULT_SKIP_DELETE_CONFIRM}"  # 1 to skip delete confirmation (for automation)
+PREFLIGHT_MODE="${PREFLIGHT_MODE:-off}" # off|info|strict
+
+declare -A DEFAULT_ENV_VALUES=(
+  [CRF]="$DEFAULT_CRF"
+  [PRESET]="$DEFAULT_PRESET"
+  [CODEC]="$DEFAULT_CODEC"
+  [HW_ACCEL]="$DEFAULT_HW_ACCEL"
+  [OVERWRITE]="$DEFAULT_OVERWRITE"
+  [DELETE]="$DEFAULT_DELETE"
+  [PARALLEL]="$DEFAULT_PARALLEL"
+  [DRY_RUN]="$DEFAULT_DRY_RUN"
+  [SKIP_DELETE_CONFIRM]="$DEFAULT_SKIP_DELETE_CONFIRM"
+  [OUTROOT]="$DEFAULT_OUTROOT"
+  [LOG_DIR]="$DEFAULT_LOG_DIR"
+)
+
+format_kb() {
+  local kb="$1"
+  if [[ -z "$kb" || ! "$kb" =~ ^[0-9]+$ ]]; then
+    echo "unknown"
+    return 1
+  fi
+
+  local mb=$((kb / 1024))
+  if [[ "$mb" -ge 1024 ]]; then
+    printf "%.1f GiB" "$(awk "BEGIN {print $mb/1024}")"
+  else
+    printf "%d MiB" "$mb"
+  fi
+}
+
+report_env_overrides() {
+  local -a overrides=()
+  local var
+  for var in "${!DEFAULT_ENV_VALUES[@]}"; do
+    local current="${!var}"
+    local expected="${DEFAULT_ENV_VALUES[$var]}"
+    if [[ "$current" != "$expected" ]]; then
+      overrides+=("$var=$current (default: $expected)")
+    fi
+  done
+
+  if [[ "${#overrides[@]}" -eq 0 ]]; then
+    echo "none (defaults in use)"
+  else
+    printf '%s\n' "${overrides[@]}"
+  fi
+}
+
+preflight_checks() {
+  local mode="$1"
+  local status=0
+  local resolved_hw
+  resolved_hw="$(detect_hw_accel)"
+
+  local target_path="$SCAN_DIR/$OUTROOT"
+  local free_kb
+  free_kb=$(df -Pk "$target_path" 2>/dev/null | awk 'NR==2 {print $4}')
+  local free_pretty; free_pretty=$(format_kb "${free_kb:-}")
+
+  echo "════════════════════════════════════════"
+  echo "  Preflight (${mode})"
+  echo "════════════════════════════════════════"
+  echo "Free space: $free_pretty at $target_path"
+
+  if [[ "$free_pretty" == "unknown" ]]; then
+    echo "WARNING: Unable to determine free space (df failed for $target_path)"
+    status=1
+  fi
+
+  echo "HW encoder: requested=$HW_ACCEL | resolved=${resolved_hw:-none}"
+  if [[ "$resolved_hw" == "none" && "$HW_ACCEL" != "none" && "$HW_ACCEL" != "auto" ]]; then
+    echo "WARNING: Requested HW_ACCEL=$HW_ACCEL but no matching encoder was found."
+    status=1
+  fi
+
+  echo "Env overrides:"
+  report_env_overrides | sed 's/^/  - /'
+  echo "════════════════════════════════════════"
+
+  if [[ "$mode" == "strict" && "$status" -ne 0 ]]; then
+    echo "Preflight failed in strict mode; aborting before file discovery."
+    exit 4
+  fi
+}
 
 need_cmd ffmpeg "install ffmpeg via your package manager"
 need_cmd ffprobe "install ffprobe via your package manager (often bundled with ffmpeg)"
@@ -284,9 +381,43 @@ export -f detect_hw_accel get_optimal_crf log_conversion encoder_present
 export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title
 export SCAN_DIR OUTROOT LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
-# Interactive folder selection (unless path provided as argument)
-if [[ $# -gt 0 ]]; then
+# Argument parsing for preflight flag + optional path
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --preflight)
+      PREFLIGHT_MODE="info"
+      shift
+      ;;
+    --preflight=info)
+      PREFLIGHT_MODE="info"
+      shift
+      ;;
+    --preflight=strict|--preflight-strict)
+      PREFLIGHT_MODE="strict"
+      shift
+      ;;
+    --)
+      shift
+      break
+      ;;
+    -*)
+      echo "ERROR: Unknown option: $1"
+      exit 1
+      ;;
+    *)
+      SCAN_DIR="$1"
+      shift
+      break
+      ;;
+  esac
+done
+
+if [[ -z "${SCAN_DIR:-}" && "$#" -gt 0 ]]; then
   SCAN_DIR="$1"
+  shift
+fi
+
+if [[ -n "${SCAN_DIR:-}" ]]; then
   if [[ ! -d "$SCAN_DIR" ]]; then
     echo "ERROR: Directory does not exist: $SCAN_DIR"
     exit 1
@@ -328,6 +459,10 @@ if [[ "$DRY_RUN" == "0" ]]; then
   echo ""
 fi
 echo "Mode: dry=$DRY_RUN delete=$DELETE parallel=$PARALLEL"
+
+if [[ "$PREFLIGHT_MODE" != "off" ]]; then
+  preflight_checks "$PREFLIGHT_MODE"
+fi
 
 # Confirm destructive delete when not a dry run (can bypass with SKIP_DELETE_CONFIRM=1)
 if [[ "$DELETE" == "1" && "$DRY_RUN" == "0" && "$SKIP_DELETE_CONFIRM" != "1" ]]; then
