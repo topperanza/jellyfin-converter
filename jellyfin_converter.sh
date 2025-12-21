@@ -144,6 +144,27 @@ preflight_hw_encoder() {
   fi
 }
 
+check_write_permissions() {
+  local target="$SCAN_DIR/$OUTROOT"
+  local tmp_file="$target/.perm_test.$$"
+  local log_probe="${LOGFILE}.permcheck"
+
+  mkdir -p "$target" || {
+    echo "ERROR: Cannot create output directory: $target (check permissions or disk space)"
+    exit 3
+  }
+
+  if ! touch "$tmp_file" "$log_probe" 2>/dev/null; then
+    echo "ERROR: Cannot write to $target (check permissions or available space)"
+    exit 3
+  fi
+
+  if ! rm -f "$tmp_file" "$log_probe" 2>/dev/null; then
+    echo "ERROR: Cannot clean up temp files in $target (check permissions)"
+    exit 3
+  fi
+}
+
 # Get optimal CRF based on resolution
 get_optimal_crf() {
   local src="$1"
@@ -605,6 +626,9 @@ DONE_FILE="$SCAN_DIR/$OUTROOT/.processed"
 
 mkdir -p "$SCAN_DIR/$OUTROOT"
 [[ -f "$DONE_FILE" ]] || touch "$DONE_FILE"
+
+check_write_permissions
+touch "$LOGFILE"
 
 preflight_hw_encoder
 
