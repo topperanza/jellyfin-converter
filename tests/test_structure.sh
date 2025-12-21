@@ -31,13 +31,16 @@ PATH="$STUB_BIN:$PATH" \
 DRY_RUN=1 \
 DELETE=0 \
 SKIP_DELETE_CONFIRM=1 \
-"$SCRIPT_PATH" "$WORKDIR"
+"$SCRIPT_PATH" "$WORKDIR" >"$TMP_ROOT/run-output.txt"
 
 test -d "$WORKDIR/converted"
 test -f "$ROOT/logs/conversion.log"
 test -f "$ROOT/logs/.processed"
+grep -q "Jellyfin Video → MKV Converter (v0.1.0)" "$TMP_ROOT/run-output.txt"
 test -f "$ROOT/examples/env.dry-run.example"
 test -f "$ROOT/examples/env.hw-accel.example"
+test -f "$ROOT/release/README.md"
+grep -q "DRY_RUN=1 DELETE=0" "$ROOT/release/README.md"
 grep -q "DRY_RUN=1" "$ROOT/examples/env.dry-run.example"
 grep -q "DELETE=0" "$ROOT/examples/env.dry-run.example"
 grep -q "DRY_RUN=1" "$ROOT/examples/env.hw-accel.example"

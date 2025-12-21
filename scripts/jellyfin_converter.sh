@@ -18,6 +18,12 @@ VIDEO_FORMATS="avi|mp4|mov|wmv|flv|m4v|mpg|mpeg|vob|ts|m2ts|webm|asf|divx|3gp|og
 # Configuration
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
+VERSION_FILE="$PROJECT_ROOT/VERSION"
+SCRIPT_VERSION="0.0.0-dev"
+if [[ -f "$VERSION_FILE" ]]; then
+  read -r SCRIPT_VERSION <"$VERSION_FILE"
+  SCRIPT_VERSION="${SCRIPT_VERSION:-0.0.0-dev}"
+fi
 
 source "$SCRIPT_DIR/lib/ffmpeg.sh"
 source "$SCRIPT_DIR/lib/media_filters.sh"
@@ -440,7 +446,7 @@ touch "$LOGFILE"
 preflight_hw_encoder
 
 echo "════════════════════════════════════════"
-echo "  Jellyfin Video → MKV Converter"
+echo "  Jellyfin Video → MKV Converter (v$SCRIPT_VERSION)"
 echo "════════════════════════════════════════"
 echo "Scanning: $SCAN_DIR"
 echo "Output: $SCAN_DIR/$OUTROOT/"
