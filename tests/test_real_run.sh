@@ -59,6 +59,7 @@ EOF
 
 chmod +x "$STUB_BIN/"*
 
+set +e
 PATH="$STUB_BIN:$PATH" \
 DRY_RUN=0 \
 DELETE=0 \
@@ -66,6 +67,9 @@ SKIP_DELETE_CONFIRM=1 \
 LOG_DIR="$TMP_ROOT/logs" \
 OUTROOT="$OUTROOT" \
 "$ROOT/run.sh" "$WORKDIR" >"$RUN_OUTPUT"
+run_status=$?
+set -e
+[[ "$run_status" -eq 0 ]]
 
 grep -q "FFMPEG_CALLED" "$FFMPEG_CALLS"
 [[ "$(grep -o -- ' -i ' "$FFMPEG_CALLS" | wc -l)" -eq 1 ]]
