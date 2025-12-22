@@ -25,6 +25,7 @@ if [[ -f "$VERSION_FILE" ]]; then
   SCRIPT_VERSION="${SCRIPT_VERSION:-0.0.0-dev}"
 fi
 
+source "$SCRIPT_DIR/lib/compat.sh"
 source "$SCRIPT_DIR/lib/ffmpeg.sh"
 source "$SCRIPT_DIR/lib/media_filters.sh"
 source "$SCRIPT_DIR/lib/io.sh"
@@ -41,6 +42,9 @@ DEFAULT_DELETE=0
 DEFAULT_PARALLEL=1
 DEFAULT_DRY_RUN=1
 DEFAULT_SKIP_DELETE_CONFIRM=0
+
+ENV_KEYS=(CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR)
+ENV_DEFAULTS=("$DEFAULT_CRF" "$DEFAULT_PRESET" "$DEFAULT_CODEC" "$DEFAULT_HW_ACCEL" "$DEFAULT_OVERWRITE" "$DEFAULT_DELETE" "$DEFAULT_PARALLEL" "$DEFAULT_DRY_RUN" "$DEFAULT_SKIP_DELETE_CONFIRM" "$DEFAULT_OUTROOT" "$DEFAULT_LOG_DIR")
 
 print_usage() {
   cat <<EOF
@@ -60,6 +64,7 @@ EOF
 }
 
 OUTROOT="${OUTROOT:-$DEFAULT_OUTROOT}"
+OUTROOT_PATH=""
 LOG_DIR="${LOG_DIR:-$DEFAULT_LOG_DIR}"  # Centralized log location (override with LOG_DIR=/path)
 CRF="${CRF:-$DEFAULT_CRF}"              # Video quality (lower=better, 18-28 recommended)
 PRESET="${PRESET:-$DEFAULT_PRESET}"    # x264 preset: ultrafast|fast|medium|slow|veryslow
@@ -72,23 +77,14 @@ DRY_RUN="${DRY_RUN:-$DEFAULT_DRY_RUN}"       # 1 to test without converting
 SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-$DEFAULT_SKIP_DELETE_CONFIRM}"  # 1 to skip delete confirmation (for automation)
 PREFLIGHT_MODE="${PREFLIGHT_MODE:-off}" # off|info|strict
 
-if (( BASH_VERSINFO[0] >= 4 )); then
-  declare -A DEFAULT_ENV_VALUES=(
-    [CRF]="$DEFAULT_CRF"
-    [PRESET]="$DEFAULT_PRESET"
-    [CODEC]="$DEFAULT_CODEC"
-    [HW_ACCEL]="$DEFAULT_HW_ACCEL"
-    [OVERWRITE]="$DEFAULT_OVERWRITE"
-    [DELETE]="$DEFAULT_DELETE"
-    [PARALLEL]="$DEFAULT_PARALLEL"
-    [DRY_RUN]="$DEFAULT_DRY_RUN"
-    [SKIP_DELETE_CONFIRM]="$DEFAULT_SKIP_DELETE_CONFIRM"
-    [OUTROOT]="$DEFAULT_OUTROOT"
-    [LOG_DIR]="$DEFAULT_LOG_DIR"
-  )
-else
-  DEFAULT_ENV_VALUES=()
-fi
+resolve_outroot() {
+  local base="$OUTROOT"
+  if [[ "$base" = /* ]]; then
+    OUTROOT_PATH="$base"
+  else
+    OUTROOT_PATH="$SCAN_DIR/$base"
+  fi
+}
 
 format_kb() {
   local kb="$1"
@@ -107,18 +103,28 @@ format_kb() {
 
 report_env_overrides() {
   local -a overrides=()
-  local var
-  for var in "${!DEFAULT_ENV_VALUES[@]}"; do
-    local current
-    if [[ "$var" == "PRESET" ]]; then
-      current="$PRESET"
-    else
-      current="${!var:-${DEFAULT_ENV_VALUES[$var]:-}}"
-    fi
-    local expected="${DEFAULT_ENV_VALUES[$var]:-}"
+  local idx=0
+  local var expected current
+  for var in "${ENV_KEYS[@]}"; do
+    expected="${ENV_DEFAULTS[$idx]}"
+    case "$var" in
+      CRF) current="$CRF" ;;
+      PRESET) current="$PRESET" ;;
+      CODEC) current="$CODEC" ;;
+      HW_ACCEL) current="$HW_ACCEL" ;;
+      OVERWRITE) current="$OVERWRITE" ;;
+      DELETE) current="$DELETE" ;;
+      PARALLEL) current="$PARALLEL" ;;
+      DRY_RUN) current="$DRY_RUN" ;;
+      SKIP_DELETE_CONFIRM) current="$SKIP_DELETE_CONFIRM" ;;
+      OUTROOT) current="$OUTROOT" ;;
+      LOG_DIR) current="$LOG_DIR" ;;
+      *) current="" ;;
+    esac
     if [[ "$current" != "$expected" ]]; then
       overrides+=("$var=$current (default: $expected)")
     fi
+    ((idx+=1))
   done
 
   if [[ "${#overrides[@]}" -eq 0 ]]; then
@@ -134,7 +140,7 @@ preflight_checks() {
   local resolved_hw
   resolved_hw="$(detect_hw_accel)"
 
-  local target_path="$SCAN_DIR/$OUTROOT"
+  local target_path="$OUTROOT_PATH"
   local free_kb
   free_kb=$(df -Pk "$target_path" 2>/dev/null | awk 'NR==2 {print $4}')
   local free_pretty; free_pretty=$(format_kb "${free_kb:-}")
@@ -178,13 +184,14 @@ process_one() {
   local filename; filename="$(basename "$rel")"
   local base="${filename%.*}"
   local ext="${filename##*.}"
-  local outdir="$OUTROOT/$srcdir"
+  local outdir="$OUTROOT_PATH/$srcdir"
   local out="$outdir/$base.mkv"
 
   mkdir -p "$outdir"
   
   # Skip if already MKV
-  ext="$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')"
+  ext="$(to_lower "$ext")"
+  local ext_upper; ext_upper="$(to_upper "$ext")"
   if [[ "$ext" == "mkv" ]]; then
     echo "Skip (already MKV): $src"
     return 0
@@ -203,7 +210,7 @@ process_one() {
   fi
 
   echo "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━"
-  echo "Source: $src [${ext^^}]"
+  echo "Source: $src [$ext_upper]"
   echo "Output: $out"
 
   # Probe video/audio codecs
@@ -413,7 +420,7 @@ process_one() {
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
 export -f detect_hw_accel get_optimal_crf log_conversion encoder_present
 export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title
-export SCAN_DIR OUTROOT LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
+export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
 # Argument parsing for preflight flag + optional path
 while [[ $# -gt 0 ]]; do
@@ -477,11 +484,13 @@ else
   select_folder
 fi
 
+resolve_outroot
+
 # Now set up log files after SCAN_DIR is determined
 LOGFILE="$LOG_DIR/conversion.log"
 DONE_FILE="$LOG_DIR/.processed"
 
-mkdir -p "$SCAN_DIR/$OUTROOT" "$LOG_DIR"
+mkdir -p "$OUTROOT_PATH" "$LOG_DIR"
 [[ -f "$DONE_FILE" ]] || touch "$DONE_FILE"
 
 check_write_permissions
@@ -493,7 +502,7 @@ echo "════════════════════════�
 echo "  Jellyfin Video → MKV Converter (v$SCRIPT_VERSION)"
 echo "════════════════════════════════════════"
 echo "Scanning: $SCAN_DIR"
-echo "Output: $SCAN_DIR/$OUTROOT/"
+echo "Output: $OUTROOT_PATH/"
 echo ""
 echo "Supported formats: ${VIDEO_FORMATS//|/, }"
 echo ""
@@ -545,6 +554,6 @@ fi
 
 echo ""
 echo "════════════════════════════════════════"
-echo "✓ All done! Output: $SCAN_DIR/$OUTROOT/"
+echo "✓ All done! Output: $OUTROOT_PATH/"
 echo "  Log file: $LOGFILE"
 echo "════════════════════════════════════════"
