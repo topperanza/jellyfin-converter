@@ -184,7 +184,8 @@ process_one() {
   mkdir -p "$outdir"
   
   # Skip if already MKV
-  if [[ "${ext,,}" == "mkv" ]]; then
+  ext="$(printf '%s' "$ext" | tr '[:upper:]' '[:lower:]')"
+  if [[ "$ext" == "mkv" ]]; then
     echo "Skip (already MKV): $src"
     return 0
   fi

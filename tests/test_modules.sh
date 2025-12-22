@@ -30,6 +30,7 @@ PATH="$TMP_BIN:$PATH"
 [[ "$(map_lang en)" == "eng" ]]
 [[ "$(map_lang ita)" == "ita" ]]
 [[ "$(map_lang jp)" == "jpn" ]]
+[[ "$(map_lang EN)" == "eng" ]]
 
 audio_info=$'0,eng,\n1,rus,\n2,,Commentary track'
 declare -a audio_map_args russian_tracks

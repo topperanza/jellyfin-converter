@@ -2,7 +2,8 @@
 
 # Language mapping with English/Italian focus
 map_lang() {
-  local t="${1,,}"
+  local t="$1"
+  t="$(printf '%s' "$t" | tr '[:upper:]' '[:lower:]')"
   case "$t" in
     en|eng|english) echo "eng" ;;
     it|ita|italian) echo "ita" ;;
@@ -28,7 +29,8 @@ is_eng_or_ita() {
 }
 
 is_commentary_title() {
-  local title_lower="${1,,}"
+  local title_lower="$1"
+  title_lower="$(printf '%s' "$title_lower" | tr '[:upper:]' '[:lower:]')"
   [[ "$title_lower" =~ (commentary|commento|kommentar|comentario) ]]
 }
 
@@ -117,7 +119,8 @@ collect_subtitle() {
   local rest="${fname#${base}}"; rest="${rest#.}"; rest="${rest%.*}"
   local lang="" forced=0
 
-  local rest_lower="${rest,,}"
+  local rest_lower="$rest"
+  rest_lower="$(printf '%s' "$rest_lower" | tr '[:upper:]' '[:lower:]')"
   local is_commentary=0
   is_commentary_title "$rest_lower" && is_commentary=1
 
