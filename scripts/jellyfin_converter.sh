@@ -250,7 +250,7 @@ process_one() {
         [[ -f "$s" ]] && collect_subtitle "$s" "$base" sub_inputs sub_langs sub_forced sub_files sub_idx
       done
     done
-  )
+  ) || true
 
   # Build mapping args
   local -a map_args=("-map" "0:v:0")
