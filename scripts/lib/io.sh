@@ -44,7 +44,8 @@ build_find_pattern() {
   for fmt in "${formats[@]}"; do
     patterns+=("-iname" "*.${fmt}" "-o")
   done
-  unset 'patterns[-1]'
+  local last_idx=$((${#patterns[@]} - 1))
+  unset "patterns[$last_idx]"
   printf '%s\n' "${patterns[@]}"
 }
 
