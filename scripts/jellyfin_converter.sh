@@ -179,7 +179,13 @@ echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU dri
 
 process_one() {
   local src="$1"
-  local sub_inputs=()
+  declare -a sub_inputs
+  sub_inputs=()
+  declare -a sub_langs sub_forced sub_files
+  sub_langs=()
+  sub_forced=()
+  sub_files=()
+  local sub_idx=0
   local rel="${src#$SCAN_DIR/}"
   local srcdir; srcdir="$(dirname "$rel")"
   local filename; filename="$(basename "$rel")"
@@ -238,9 +244,6 @@ process_one() {
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
 
   # Initialize subtitle inputs to avoid set -u failures when none are found
-  local -a sub_langs=() sub_forced=() sub_files=()
-  local sub_idx=0
-
   # Get source directory for finding subtitles
   local src_full_dir; src_full_dir="$(dirname "$src")"
 
