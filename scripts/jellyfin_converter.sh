@@ -105,7 +105,12 @@ report_env_overrides() {
   local -a overrides=()
   local var
   for var in "${!DEFAULT_ENV_VALUES[@]}"; do
-    local current="${!var:-${DEFAULT_ENV_VALUES[$var]:-}}"
+    local current
+    if [[ "$var" == "PRESET" ]]; then
+      current="$PRESET"
+    else
+      current="${!var:-${DEFAULT_ENV_VALUES[$var]:-}}"
+    fi
     local expected="${DEFAULT_ENV_VALUES[$var]:-}"
     if [[ "$current" != "$expected" ]]; then
       overrides+=("$var=$current (default: $expected)")
