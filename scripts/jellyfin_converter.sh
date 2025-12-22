@@ -298,12 +298,25 @@ process_one() {
     return 0
   fi
 
+  # Build base command safely for Bash 3
+  local -a cmd_base=(ffmpeg -hide_banner -y -i "$src")
+  if [[ ${#sub_inputs[@]} -gt 0 ]]; then
+    cmd_base+=("${sub_inputs[@]}")
+  fi
+  cmd_base+=("${map_args[@]}")
+
   # Try REMUX first if possible
   if [[ "$do_remux" -eq 1 ]]; then
     echo "→ Attempting remux (no re-encoding)..."
-    if ffmpeg -hide_banner -y -i "$src" "${sub_inputs[@]}" \
-      "${map_args[@]}" -c copy "${sub_codec_args[@]}" "${meta_args[@]}" \
-      "$out" 2>&1 | grep -v "Timestamps are unset"; then
+    
+    local -a remux_cmd=("${cmd_base[@]}")
+    remux_cmd+=("-c" "copy")
+    if [[ ${#sub_codec_args[@]} -gt 0 ]]; then
+      remux_cmd+=("${sub_codec_args[@]}")
+    fi
+    remux_cmd+=("${meta_args[@]}" "$out")
+
+    if "${remux_cmd[@]}" 2>&1 | grep -v "Timestamps are unset"; then
       
       # Validate output
       if ffprobe -v error "$out" >/dev/null 2>&1; then
@@ -392,9 +405,14 @@ process_one() {
   fi
 
   # Execute transcode
-  if ffmpeg -hide_banner -y -i "$src" "${sub_inputs[@]}" \
-    "${map_args[@]}" "${encode_args[@]}" "${audio_encode_args[@]}" \
-    "${sub_codec_args[@]}" "${meta_args[@]}" "$out"; then
+  local -a trans_cmd=("${cmd_base[@]}")
+  trans_cmd+=("${encode_args[@]}" "${audio_encode_args[@]}")
+  if [[ ${#sub_codec_args[@]} -gt 0 ]]; then
+    trans_cmd+=("${sub_codec_args[@]}")
+  fi
+  trans_cmd+=("${meta_args[@]}" "$out")
+
+  if "${trans_cmd[@]}"; then
     
     # Validate output
     if ffprobe -v error "$out" >/dev/null 2>&1; then
