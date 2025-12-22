@@ -51,3 +51,15 @@ LOG_DIR="$TMP_ROOT/logs" \
 grep -q "Dry run: 1" "$RUN_OUTPUT"
 grep -q "converted" "$RUN_OUTPUT"
 grep -q "DRY-RUN MODE: no files will be modified" "$RUN_OUTPUT"
+
+ABS_OUTROOT="$TMP_ROOT/output-abs"
+ABS_RUN_OUTPUT="$TMP_ROOT/run-abs.txt"
+PATH="$STUB_BIN:$PATH" \
+DRY_RUN=1 \
+DELETE=0 \
+SKIP_DELETE_CONFIRM=1 \
+LOG_DIR="$TMP_ROOT/logs-abs" \
+OUTROOT="$ABS_OUTROOT" \
+"$ROOT/run.sh" "$WORKDIR" >"$ABS_RUN_OUTPUT"
+
+grep -q "Output: $ABS_OUTROOT/" "$ABS_RUN_OUTPUT"

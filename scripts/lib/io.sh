@@ -17,7 +17,7 @@ log_conversion() {
 }
 
 check_write_permissions() {
-  local output_dir="$SCAN_DIR/$OUTROOT"
+  local output_dir="$OUTROOT_PATH"
   local logs_dir="$LOG_DIR"
   local tmp_file="$output_dir/.perm_test.$$"
   local log_probe="${LOGFILE}.permcheck"
