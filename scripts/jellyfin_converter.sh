@@ -37,10 +37,27 @@ DEFAULT_PRESET="medium"
 DEFAULT_CODEC="h264"
 DEFAULT_HW_ACCEL="auto"
 DEFAULT_OVERWRITE=0
-DEFAULT_DELETE=1
+DEFAULT_DELETE=0
 DEFAULT_PARALLEL=1
-DEFAULT_DRY_RUN=0
+DEFAULT_DRY_RUN=1
 DEFAULT_SKIP_DELETE_CONFIRM=0
+
+print_usage() {
+  cat <<EOF
+Usage: $(basename "$0") [OPTIONS] [DIRECTORY]
+
+Convert videos under DIRECTORY into Jellyfin-friendly MKV files.
+
+Options:
+  --preflight[=info|strict]  Run environment checks before processing
+  --dry-run                  Preview actions without writing outputs (default)
+  --version                  Show script version and exit
+  -h, --help                 Show this help message and exit
+
+Defaults:
+  DRY_RUN=$DEFAULT_DRY_RUN DELETE=$DEFAULT_DELETE OUTROOT="$DEFAULT_OUTROOT" LOG_DIR="$DEFAULT_LOG_DIR"
+EOF
+}
 
 OUTROOT="${OUTROOT:-$DEFAULT_OUTROOT}"
 LOG_DIR="${LOG_DIR:-$DEFAULT_LOG_DIR}"  # Centralized log location (override with LOG_DIR=/path)
@@ -142,6 +159,7 @@ preflight_checks() {
 need_cmd ffmpeg "install ffmpeg via your package manager"
 need_cmd ffprobe "install ffprobe via your package manager (often bundled with ffmpeg)"
 need_cmd find "install findutils/coreutils via your package manager"
+need_cmd df "install coreutils (df) via your package manager"
 echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU drivers"
 
 process_one() {
@@ -390,6 +408,14 @@ export SCAN_DIR OUTROOT LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE 
 # Argument parsing for preflight flag + optional path
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --help|-h)
+      print_usage
+      exit 0
+      ;;
+    --version)
+      echo "jellyfin_converter v$SCRIPT_VERSION"
+      exit 0
+      ;;
     --preflight)
       PREFLIGHT_MODE="info"
       shift
@@ -400,6 +426,14 @@ while [[ $# -gt 0 ]]; do
       ;;
     --preflight=strict|--preflight-strict)
       PREFLIGHT_MODE="strict"
+      shift
+      ;;
+    --dry-run)
+      DRY_RUN=1
+      shift
+      ;;
+    --no-dry-run)
+      DRY_RUN=0
       shift
       ;;
     --)
@@ -463,6 +497,11 @@ echo ""
 if [[ "$DRY_RUN" == "0" ]]; then
   echo "Tip: For first-time runs, set DRY_RUN=1 to preview actions without converting."
   echo ""
+fi
+if [[ "$DRY_RUN" == "1" ]]; then
+  echo "!!! DRY-RUN MODE: no files will be modified (DELETE=$DELETE) !!!"
+else
+  echo "!!! REAL RUN: outputs will be written (DELETE=$DELETE) !!!"
 fi
 echo "Mode: dry=$DRY_RUN delete=$DELETE parallel=$PARALLEL"
 

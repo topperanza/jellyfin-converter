@@ -3,6 +3,7 @@ set -euo pipefail
 
 ROOT="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 SCRIPT_PATH="$ROOT/scripts/jellyfin_converter.sh"
+VERSION_STRING="$(cat "$ROOT/VERSION")"
 
 TMP_ROOT="$(mktemp -d)"
 WORKDIR="$TMP_ROOT/workdir"
@@ -36,7 +37,8 @@ SKIP_DELETE_CONFIRM=1 \
 test -d "$WORKDIR/converted"
 test -f "$ROOT/logs/conversion.log"
 test -f "$ROOT/logs/.processed"
-grep -q "Jellyfin Video → MKV Converter (v0.1.0)" "$TMP_ROOT/run-output.txt"
+grep -q "Jellyfin Video → MKV Converter (v$VERSION_STRING)" "$TMP_ROOT/run-output.txt"
+grep -q "Jellyfin Video → MKV Converter (v$VERSION_STRING)" "$TMP_ROOT/run-output.txt"
 test -f "$ROOT/examples/env.dry-run.example"
 test -f "$ROOT/examples/env.hw-accel.example"
 test -f "$ROOT/release/README.md"
