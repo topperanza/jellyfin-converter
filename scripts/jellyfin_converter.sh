@@ -326,10 +326,10 @@ process_one() {
       ;;
     qsv)
       if [[ "$CODEC" == "hevc" ]]; then
-        encode_args=(-c:v hevc_qsv -preset medium -global_quality "$use_crf" -look_ahead 1)
+        encode_args=(-c:v hevc_qsv -preset "$PRESET" -global_quality "$use_crf" -look_ahead 1)
         echo "→ Using Intel QuickSync (HEVC)"
       else
-        encode_args=(-c:v h264_qsv -preset medium -global_quality "$use_crf" -look_ahead 1)
+        encode_args=(-c:v h264_qsv -preset "$PRESET" -global_quality "$use_crf" -look_ahead 1)
         echo "→ Using Intel QuickSync (H.264)"
       fi
       ;;
