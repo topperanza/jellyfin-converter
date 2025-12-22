@@ -68,4 +68,5 @@ OUTROOT="$OUTROOT" \
 "$ROOT/run.sh" "$WORKDIR" >"$RUN_OUTPUT"
 
 grep -q "FFMPEG_CALLED" "$FFMPEG_CALLS"
+[[ "$(grep -o -- ' -i ' "$FFMPEG_CALLS" | wc -l)" -eq 1 ]]
 find "$OUTROOT" -name "*.mkv" | grep -q "sample.mkv"

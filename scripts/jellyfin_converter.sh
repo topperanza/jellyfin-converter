@@ -236,13 +236,14 @@ process_one() {
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
 
+  # Initialize subtitle inputs to avoid set -u failures when none are found
+  local -a sub_inputs=() sub_langs=() sub_forced=() sub_files=()
+  local sub_idx=0
+
   # Get source directory for finding subtitles
   local src_full_dir; src_full_dir="$(dirname "$src")"
 
   # Collect external subtitles (English/Italian only)
-  local -a sub_inputs=() sub_langs=() sub_forced=() sub_files=()
-  local sub_idx=0
-
   (
     shopt -s nullglob
     for ext in srt ass sub; do
