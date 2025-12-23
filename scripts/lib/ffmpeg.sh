@@ -146,3 +146,38 @@ get_optimal_crf() {
     echo 23
   fi
 }
+
+get_video_bitrate_kbps() {
+  local src="$1"
+  local bitrate
+
+  bitrate=$(ffprobe -v error -select_streams v:0 -show_entries stream=bit_rate \
+    -of default=nw=1:nk=1 "$src" 2>/dev/null || true)
+
+  if [[ -z "$bitrate" || "$bitrate" == "N/A" || ! "$bitrate" =~ ^[0-9]+$ ]]; then
+    bitrate=$(ffprobe -v error -show_entries format=bit_rate \
+      -of default=nw=1:nk=1 "$src" 2>/dev/null || true)
+  fi
+
+  if [[ -z "$bitrate" || "$bitrate" == "N/A" || ! "$bitrate" =~ ^[0-9]+$ ]]; then
+    echo 0
+  else
+    echo $((bitrate / 1000))
+  fi
+}
+
+get_filesize_mb() {
+  local src="$1"
+  local size
+
+  size=$(stat -f%z "$src" 2>/dev/null || true)
+  if [[ -z "$size" || ! "$size" =~ ^[0-9]+$ ]]; then
+    size=$(stat -c%s "$src" 2>/dev/null || true)
+  fi
+
+  if [[ -z "$size" || ! "$size" =~ ^[0-9]+$ ]]; then
+    echo 0
+  else
+    echo $((size / 1024 / 1024))
+  fi
+}
