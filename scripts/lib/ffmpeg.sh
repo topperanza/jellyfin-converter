@@ -10,6 +10,15 @@ is_codec_compatible_audio() { case "$1" in aac|ac3|eac3|mp3|flac|opus|dts) retur
 # Hardware acceleration detection helpers
 encoder_present() { ffmpeg -hide_banner -encoders 2>/dev/null | grep -q "$1"; }
 
+# Wrapper to run ffmpeg non-interactively and safely
+run_ffmpeg() {
+  local cmd="$1"
+  shift
+  # Inject -nostdin to prevent interactive prompts/hanging and ensure stdin is not read.
+  # This allows the script to run in background or via automation without suspending.
+  "$cmd" -nostdin "$@"
+}
+
 detect_hw_accel() {
   if [[ -n "${RESOLVED_HW:-}" ]]; then
     echo "$RESOLVED_HW"

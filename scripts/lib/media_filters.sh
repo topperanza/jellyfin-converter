@@ -73,11 +73,9 @@ if have_bash_ge_4; then
           out_has_non_russian=1
           echo "  → Keeping audio track $audio_idx: $mapped_lang (non-Russian)"
         elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-          if [[ "$audio_idx" -eq 0 ]]; then
-            out_map_args+=("-map" "0:a:$audio_idx")
-            out_has_non_russian=1
-            echo "  → Keeping audio track $audio_idx: unknown/original"
-          fi
+          out_map_args+=("-map" "0:a:$audio_idx")
+          out_has_non_russian=1
+          echo "  → Keeping audio track $audio_idx: unknown (preserving)"
         fi
         ((audio_idx+=1))
       done <<< "$audio_info" || true
@@ -120,7 +118,11 @@ if have_bash_ge_4; then
     local -n _sub_idx="$7"
 
     local fname; fname="$(basename "$subfile")"
-    local rest="${fname#${base}}"; rest="${rest#.}"; rest="${rest%.*}"
+    # Remove the base filename prefix
+    local rest="${fname#${base}}"
+    # Remove extension
+    rest="${rest%.*}"
+    
     local lang="" forced=0
 
     local rest_lower="$rest"
@@ -128,8 +130,10 @@ if have_bash_ge_4; then
     local is_commentary=0
     is_commentary_title "$rest_lower" && is_commentary=1
 
-    IFS='._- ' read -r -a tokens <<< "$rest"
+    # Split by common delimiters: dot, underscore, dash, space, parens, brackets
+    IFS='._- ()[]' read -r -a tokens <<< "$rest"
     for tk in "${tokens[@]}"; do
+      [[ -z "$tk" ]] && continue
       [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
       [[ "$tk" =~ ^(forced|forzato|forzati|zwangs|obligatoire)$ ]] && forced=1
     done
@@ -188,11 +192,9 @@ else
           eval "$out_has_non_russian=1"
           echo "  → Keeping audio track $audio_idx: $mapped_lang (non-Russian)"
         elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-          if [[ "$audio_idx" -eq 0 ]]; then
-            eval "$out_map_args+=(\"-map\" \"0:a:$audio_idx\")"
-            eval "$out_has_non_russian=1"
-            echo "  → Keeping audio track $audio_idx: unknown/original"
-          fi
+          eval "$out_map_args+=(\"-map\" \"0:a:$audio_idx\")"
+          eval "$out_has_non_russian=1"
+          echo "  → Keeping audio track $audio_idx: unknown (preserving)"
         fi
         ((audio_idx+=1))
       done <<< "$audio_info" || true
@@ -239,7 +241,11 @@ else
     local _sub_idx="$7"
 
     local fname; fname="$(basename "$subfile")"
-    local rest="${fname#${base}}"; rest="${rest#.}"; rest="${rest%.*}"
+    # Remove the base filename prefix
+    local rest="${fname#${base}}"
+    # Remove extension
+    rest="${rest%.*}"
+    
     local lang="" forced=0
 
     local rest_lower="$rest"
@@ -247,8 +253,11 @@ else
     local is_commentary=0
     is_commentary_title "$rest_lower" && is_commentary=1
 
-    IFS='._- ' read -r -a tokens <<< "$rest"
+    # Split by common delimiters: dot, underscore, dash, space, parens, brackets, quotes
+    # Note: We use mixed quoting to include both single and double quotes in IFS
+    IFS='._- ()[]"'"'" read -r -a tokens <<< "$rest"
     for tk in "${tokens[@]}"; do
+      [[ -z "$tk" ]] && continue
       [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
       [[ "$tk" =~ ^(forced|forzato|forzati|zwangs|obligatoire)$ ]] && forced=1
     done

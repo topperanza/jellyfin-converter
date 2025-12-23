@@ -12,8 +12,8 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-# Supported video formats (excluding mkv since that's our target)
-VIDEO_FORMATS="avi|mp4|mov|wmv|flv|m4v|mpg|mpeg|vob|ts|m2ts|webm|asf|divx|3gp|ogv"
+# Supported video formats
+VIDEO_FORMATS="avi|mp4|mov|wmv|flv|m4v|mpg|mpeg|vob|ts|m2ts|webm|asf|divx|3gp|ogv|mkv"
 
 # Configuration
 SCRIPT_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -179,6 +179,7 @@ echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU dri
 
 process_one() {
   local src="$1"
+  local src_full_dir; src_full_dir="$(dirname "$src")"
   declare -a sub_inputs
   sub_inputs=()
   declare -a sub_langs sub_forced sub_files
@@ -191,16 +192,15 @@ process_one() {
   local filename; filename="$(basename "$rel")"
   local base="${filename%.*}"
   local ext="${filename##*.}"
+  local ext_upper; ext_upper="$(to_upper "$ext")"
   local outdir="$OUTROOT_PATH/$srcdir"
   local out="$outdir/$base.mkv"
 
   mkdir -p "$outdir"
   
-  # Skip if already MKV
-  ext="$(to_lower "$ext")"
-  local ext_upper; ext_upper="$(to_upper "$ext")"
-  if [[ "$ext" == "mkv" ]]; then
-    echo "Skip (already MKV): $src"
+  # Skip if source and output are the same file
+  if [[ "$src" == "$out" ]]; then
+    echo "Skip (source is same as output): $src"
     return 0
   fi
 
@@ -247,15 +247,19 @@ process_one() {
   # Get source directory for finding subtitles
   local src_full_dir; src_full_dir="$(dirname "$src")"
 
-  # Collect external subtitles (English/Italian only)
-  (
-    shopt -s nullglob
-    for ext in srt ass sub; do
-      for s in "$src_full_dir/$base".*."$ext" "$src_full_dir/$base"."$ext"; do
-        [[ -f "$s" ]] && collect_subtitle "$s" "$base" sub_inputs sub_langs sub_forced sub_files sub_idx
-      done
+  # Subtitle discovery (check all supported extensions)
+  local old_nullglob
+  shopt -q nullglob && old_nullglob=1 || old_nullglob=0
+  shopt -s nullglob
+
+  for ext in srt ass sub; do
+    # Match any file starting with the base name (e.g. "Movie.avi" -> "Movie*.srt")
+    for s in "$src_full_dir/$base"*"$ext"; do
+      [[ -f "$s" ]] && collect_subtitle "$s" "$base" sub_inputs sub_langs sub_forced sub_files sub_idx
     done
-  ) || true
+  done
+
+  [[ "$old_nullglob" -eq 0 ]] && shopt -u nullglob
 
   # Build mapping args
   local -a map_args=("-map" "0:v:0")
@@ -316,7 +320,7 @@ process_one() {
     fi
     remux_cmd+=("${meta_args[@]}" "$out")
 
-    if "${remux_cmd[@]}" 2>&1 | grep -v "Timestamps are unset"; then
+    if run_ffmpeg "${remux_cmd[@]}"; then
       
       # Validate output
       if ffprobe -v error "$out" >/dev/null 2>&1; then
@@ -412,7 +416,7 @@ process_one() {
   fi
   trans_cmd+=("${meta_args[@]}" "$out")
 
-  if "${trans_cmd[@]}"; then
+  if run_ffmpeg "${trans_cmd[@]}"; then
     
     # Validate output
     if ffprobe -v error "$out" >/dev/null 2>&1; then
@@ -565,12 +569,19 @@ fi
 # Process files
 echo "Normalized scan root: $SCAN_DIR"
 echo "Filename patterns: $(display_patterns)"
+
+# Build find arguments safely (disable globbing to preserve * in patterns)
+set -f
+# shellcheck disable=SC2046
+find_args=( $(build_find_pattern) )
+set +f
+
 if command -v parallel >/dev/null 2>&1 && [[ "$PARALLEL" -gt 1 ]]; then
   echo "Using GNU Parallel with $PARALLEL jobs"
-  find "$SCAN_DIR" -type f \( $(build_find_pattern) \) -print0 | \
+  find "$SCAN_DIR" -type f \( "${find_args[@]}" \) -print0 | \
     parallel -0 -j "$PARALLEL" --bar process_one {}
 else
-  find "$SCAN_DIR" -type f \( $(build_find_pattern) \) -print0 | while IFS= read -r -d '' f; do
+  find "$SCAN_DIR" -type f \( "${find_args[@]}" \) -print0 | while IFS= read -r -d '' f; do
     process_one "$f"
   done
 fi
@@ -578,5 +589,6 @@ fi
 echo ""
 echo "════════════════════════════════════════"
 echo "✓ All done! Output: $OUTROOT_PATH/"
+exit 0
 echo "  Log file: $LOGFILE"
 echo "════════════════════════════════════════"
