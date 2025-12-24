@@ -332,6 +332,34 @@ process_one() {
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
 
+  local -a subtitle_map_args=()
+  local internal_sub_count=0
+  local subtitle_info
+  subtitle_info=$(ffprobe -v error -select_streams s \
+    -show_entries stream=index,codec_name:stream_tags=language,title \
+    -of csv=p=0 "$src" 2>/dev/null || true)
+
+  if [[ -n "$subtitle_info" ]]; then
+    while IFS=, read -r sub_stream_idx sub_codec sub_lang sub_title; do
+      [[ -z "$sub_stream_idx" ]] && continue
+      if [[ "$sub_stream_idx" =~ ^[0-9]+$ ]]; then
+        subtitle_map_args+=("-map" "0:s:${sub_stream_idx}")
+        internal_sub_count=$((internal_sub_count + 1))
+        local mapped_lang; mapped_lang="$(map_lang "$sub_lang")"
+        local display_lang="$mapped_lang"
+        if [[ -z "$display_lang" ]]; then
+          display_lang="${sub_lang:-unknown}"
+        fi
+        if is_commentary_title "$sub_title"; then
+          display_lang="commentary"
+        fi
+        local codec_label="$sub_codec"
+        [[ -z "$codec_label" ]] && codec_label="unknown"
+        echo "  → Keeping subtitle track $sub_stream_idx: $display_lang ($codec_label)"
+      fi
+    done <<< "$subtitle_info" || true
+  fi
+
   # Initialize subtitle inputs to avoid set -u failures when none are found
   # Get source directory for finding subtitles
   local src_full_dir; src_full_dir="$(dirname "$src")"
@@ -351,23 +379,39 @@ process_one() {
   [[ "$old_nullglob" -eq 0 ]] && shopt -u nullglob
 
   # Build mapping args
-  local -a map_args=("-map" "0:v:0")
-  map_args+=("${audio_map_args[@]}")
-  
   if (( sub_idx > 0 )); then
-    for ((i=1; i<=sub_idx; i++)); do 
-      map_args+=("-map" "$i:0")
+    for ((i=1; i<=sub_idx; i++)); do
+      subtitle_map_args+=("-map" "$i:s:0")
+      local lang="${sub_langs[$((i-1))]}"
+      [[ -z "$lang" ]] && lang="unknown"
+      local sub_file="${sub_files[$((i-1))]}"
+      local codec_label; codec_label="$(basename "$sub_file")"
+      codec_label="${codec_label##*.}"
+      codec_label="$(to_lower "$codec_label")"
+      [[ "$codec_label" == "srt" ]] && codec_label="subrip"
+      [[ -z "$codec_label" ]] && codec_label="unknown"
+      echo "  → Keeping subtitle track $i: $lang ($codec_label)"
     done
   fi
+
+  if [[ "${#subtitle_map_args[@]}" -eq 0 ]]; then
+    echo "  → No subtitles selected"
+  fi
+
+  local -a map_args=("-map" "0:v:0")
+  map_args+=("${audio_map_args[@]}")
+  map_args+=("${subtitle_map_args[@]}")
 
   # Build metadata args for subtitles
   local -a meta_args=()
   if (( sub_idx > 0 )); then
     for ((i=0; i<sub_idx; i++)); do
       local lang="${sub_langs[$i]}" forced="${sub_forced[$i]}"
-      [[ -n "$lang" ]] && meta_args+=("-metadata:s:s:$i" "language=$lang")
-      [[ -n "$lang" ]] && meta_args+=("-metadata:s:s:$i" "title=Subtitle ($lang)")
-      [[ "$forced" -eq 1 ]] && meta_args+=("-disposition:s:$i" "forced")
+      [[ -z "$forced" ]] && forced=0
+      local sub_meta_index=$((internal_sub_count + i))
+      [[ -n "$lang" ]] && meta_args+=("-metadata:s:s:${sub_meta_index}" "language=$lang")
+      [[ -n "$lang" ]] && meta_args+=("-metadata:s:s:${sub_meta_index}" "title=Subtitle ($lang)")
+      [[ "$forced" -eq 1 ]] && meta_args+=("-disposition:s:${sub_meta_index}" "forced")
     done
   fi
 
@@ -426,7 +470,7 @@ process_one() {
 
   # Subtitle codec (copy ASS/SSA, convert SUB to SRT)
   local -a sub_codec_args=()
-  if (( sub_idx > 0 )); then
+  if [[ "${#subtitle_map_args[@]}" -gt 0 ]]; then
     sub_codec_args=("-c:s" "copy")
   fi
 
