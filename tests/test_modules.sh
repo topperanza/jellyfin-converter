@@ -51,6 +51,13 @@ collect_subtitle "/tmp/sample.base.commentary.srt" "sample.base" sub_inputs sub_
 [[ "${sub_langs[0]}" == "eng" && "${sub_langs[1]}" == "und" ]]
 [[ "$sub_idx" -eq 2 ]]
 
+subtitle_info=$'0,subrip,eng,English,0,0\n1,subrip,rus,,0,0\n2,subrip,rus,,0,1'
+select_internal_subtitles "$subtitle_info"
+[[ "$SUBTITLE_INTERNAL_COUNT" -eq 2 ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:s:0"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:s:2"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" != *"0:s:1"* ]]
+
 [[ "$(get_optimal_crf "$TMP_BIN/file.uhd")" == "22" ]]
 [[ "$(get_optimal_crf "$TMP_BIN/file.hd")" == "20" ]]
 [[ "$(get_optimal_crf "$TMP_BIN/file.sd")" == "23" ]]

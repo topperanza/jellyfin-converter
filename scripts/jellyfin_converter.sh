@@ -48,9 +48,10 @@ PROFILE="${PROFILE:-$DEFAULT_PROFILE}"
 FORCE_TRANSCODE="${FORCE_TRANSCODE:-}"
 MAX_VIDEO_BITRATE_KBPS="${MAX_VIDEO_BITRATE_KBPS:-}"
 MAX_FILESIZE_MB="${MAX_FILESIZE_MB:-}"
+REMUX_MAX_GB="${REMUX_MAX_GB:-}"
 TARGET_HEIGHT="${TARGET_HEIGHT:-}"
 
-ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR)
+ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB REMUX_MAX_GB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR)
 ENV_DEFAULTS=()
 PROFILE_FORCE_TRANSCODE=0
 PROFILE_MAX_VIDEO_BITRATE_KBPS=0
@@ -98,9 +99,20 @@ configure_policy_defaults() {
   PROFILE="$(to_lower "$PROFILE")"
   apply_profile_settings "$PROFILE"
 
+  local remux_max_gb
+  remux_max_gb="$(normalize_int_or_zero "${REMUX_MAX_GB:-0}")"
+  local remux_default_gb
+  remux_default_gb=$(awk "BEGIN {printf \"%.1f\", $PROFILE_MAX_FILESIZE_MB/1024}")
+
   FORCE_TRANSCODE="$(normalize_int_or_zero "${FORCE_TRANSCODE:-$PROFILE_FORCE_TRANSCODE}")"
   MAX_VIDEO_BITRATE_KBPS="$(normalize_int_or_zero "${MAX_VIDEO_BITRATE_KBPS:-$PROFILE_MAX_VIDEO_BITRATE_KBPS}")"
   MAX_FILESIZE_MB="$(normalize_int_or_zero "${MAX_FILESIZE_MB:-$PROFILE_MAX_FILESIZE_MB}")"
+  if [[ "$remux_max_gb" -gt 0 ]]; then
+    MAX_FILESIZE_MB=$((remux_max_gb * 1024))
+    REMUX_MAX_GB="$remux_max_gb"
+  else
+    REMUX_MAX_GB="$remux_default_gb"
+  fi
   TARGET_HEIGHT="$(normalize_int_or_zero "${TARGET_HEIGHT:-$PROFILE_TARGET_HEIGHT}")"
 
   ENV_DEFAULTS=(
@@ -108,6 +120,7 @@ configure_policy_defaults() {
     "$PROFILE_FORCE_TRANSCODE"
     "$PROFILE_MAX_VIDEO_BITRATE_KBPS"
     "$PROFILE_MAX_FILESIZE_MB"
+    "$remux_default_gb"
     "$PROFILE_TARGET_HEIGHT"
     "$DEFAULT_CRF"
     "$DEFAULT_PRESET"
@@ -196,6 +209,7 @@ report_env_overrides() {
       FORCE_TRANSCODE) current="$FORCE_TRANSCODE" ;;
       MAX_VIDEO_BITRATE_KBPS) current="$MAX_VIDEO_BITRATE_KBPS" ;;
       MAX_FILESIZE_MB) current="$MAX_FILESIZE_MB" ;;
+      REMUX_MAX_GB) current="$REMUX_MAX_GB" ;;
       TARGET_HEIGHT) current="$TARGET_HEIGHT" ;;
       CRF) current="$CRF" ;;
       PRESET) current="$PRESET" ;;
@@ -269,18 +283,13 @@ echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU dri
 process_one() {
   local src="$1"
   local src_full_dir; src_full_dir="$(dirname "$src")"
-  declare -a sub_inputs
-  sub_inputs=()
-  declare -a sub_langs sub_forced sub_files
-  sub_langs=()
-  sub_forced=()
-  sub_files=()
-  declare -a subtitle_map_args
-  subtitle_map_args=()
-  declare -a audio_map_args
-  audio_map_args=()
-  declare -a russian_tracks
-  russian_tracks=()
+  local -a sub_inputs=()
+  local -a sub_langs=()
+  local -a sub_forced=()
+  local -a sub_files=()
+  local -a subtitle_map_args=()
+  local -a audio_map_args=()
+  local -a russian_tracks=()
   local has_eng_or_ita=0
   local has_non_russian=0
   local sub_idx=0
@@ -337,33 +346,12 @@ process_one() {
   local internal_sub_count=0
   local subtitle_info
   subtitle_info=$(ffprobe -v error -select_streams s \
-    -show_entries stream=index,codec_name:stream_tags=language,title \
+    -show_entries stream=index,codec_name:stream_tags=language,title:stream_disposition=default,forced \
     -of csv=p=0 "$src" 2>/dev/null || true)
 
-  if [[ -n "$subtitle_info" ]]; then
-    while IFS=, read -r sub_stream_idx sub_codec sub_lang sub_title; do
-      [[ -z "$sub_stream_idx" ]] && continue
-      if [[ "$sub_stream_idx" =~ ^[0-9]+$ ]]; then
-        subtitle_map_args+=("-map" "0:s:${sub_stream_idx}")
-        internal_sub_count=$((internal_sub_count + 1))
-        local mapped_lang; mapped_lang="$(map_lang "$sub_lang")"
-        local display_lang="$mapped_lang"
-        if [[ -z "$display_lang" ]]; then
-          display_lang="${sub_lang:-unknown}"
-        fi
-        if is_commentary_title "$sub_title"; then
-          display_lang="commentary"
-        fi
-        local codec_label="$sub_codec"
-        [[ -z "$codec_label" ]] && codec_label="unknown"
-        echo "  → Keeping subtitle track $sub_stream_idx: $display_lang ($codec_label)"
-      fi
-    done <<< "$subtitle_info" || true
-  fi
-
-  # Initialize subtitle inputs to avoid set -u failures when none are found
-  # Get source directory for finding subtitles
-  local src_full_dir; src_full_dir="$(dirname "$src")"
+  select_internal_subtitles "$subtitle_info"
+  subtitle_map_args=("${SUBTITLE_SELECTION_MAP_ARGS[@]}")
+  internal_sub_count="$SUBTITLE_INTERNAL_COUNT"
 
   # Subtitle discovery (check all supported extensions)
   local old_nullglob
@@ -586,9 +574,17 @@ process_one() {
     echo "→ Encoding stereo to AAC"
   fi
 
+  local -a filter_args=()
+  if [[ "$TARGET_HEIGHT" -gt 0 && "$height_num" -gt "$TARGET_HEIGHT" ]]; then
+    filter_args+=(-vf "scale=-2:${TARGET_HEIGHT}")
+    echo "→ Scaling video to ${TARGET_HEIGHT}p maximum height"
+  fi
+
   # Execute transcode
   local -a trans_cmd=("${cmd_base[@]}")
-  trans_cmd+=("${encode_args[@]}" "${audio_encode_args[@]}")
+  trans_cmd+=("${encode_args[@]}")
+  trans_cmd+=("${audio_encode_args[@]}")
+  trans_cmd+=("${filter_args[@]}")
   if [[ ${#sub_codec_args[@]} -gt 0 ]]; then
     trans_cmd+=("${sub_codec_args[@]}")
   fi
@@ -624,7 +620,7 @@ process_one() {
 # Export functions for parallel processing
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
 export -f detect_hw_accel get_optimal_crf log_conversion encoder_present get_video_bitrate_kbps get_filesize_mb
-export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title
+export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title select_internal_subtitles
 export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
 # Argument parsing for preflight flag + optional path
