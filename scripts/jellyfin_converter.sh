@@ -42,9 +42,86 @@ DEFAULT_DELETE=0
 DEFAULT_PARALLEL=1
 DEFAULT_DRY_RUN=1
 DEFAULT_SKIP_DELETE_CONFIRM=0
+DEFAULT_PROFILE="jellyfin-1080p"
 
-ENV_KEYS=(CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR)
-ENV_DEFAULTS=("$DEFAULT_CRF" "$DEFAULT_PRESET" "$DEFAULT_CODEC" "$DEFAULT_HW_ACCEL" "$DEFAULT_OVERWRITE" "$DEFAULT_DELETE" "$DEFAULT_PARALLEL" "$DEFAULT_DRY_RUN" "$DEFAULT_SKIP_DELETE_CONFIRM" "$DEFAULT_OUTROOT" "$DEFAULT_LOG_DIR")
+PROFILE="${PROFILE:-$DEFAULT_PROFILE}"
+FORCE_TRANSCODE="${FORCE_TRANSCODE:-}"
+MAX_VIDEO_BITRATE_KBPS="${MAX_VIDEO_BITRATE_KBPS:-}"
+MAX_FILESIZE_MB="${MAX_FILESIZE_MB:-}"
+TARGET_HEIGHT="${TARGET_HEIGHT:-}"
+
+ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR)
+ENV_DEFAULTS=()
+PROFILE_FORCE_TRANSCODE=0
+PROFILE_MAX_VIDEO_BITRATE_KBPS=0
+PROFILE_MAX_FILESIZE_MB=0
+PROFILE_TARGET_HEIGHT=0
+
+apply_profile_settings() {
+  local name="$1"
+  case "$name" in
+    jellyfin-1080p)
+      PROFILE_FORCE_TRANSCODE=1
+      PROFILE_MAX_VIDEO_BITRATE_KBPS=8000
+      PROFILE_MAX_FILESIZE_MB=12000
+      PROFILE_TARGET_HEIGHT=1080
+      ;;
+    jellyfin-720p)
+      PROFILE_FORCE_TRANSCODE=1
+      PROFILE_MAX_VIDEO_BITRATE_KBPS=4500
+      PROFILE_MAX_FILESIZE_MB=8000
+      PROFILE_TARGET_HEIGHT=720
+      ;;
+    archive|auto)
+      PROFILE_FORCE_TRANSCODE=0
+      PROFILE_MAX_VIDEO_BITRATE_KBPS=0
+      PROFILE_MAX_FILESIZE_MB=0
+      PROFILE_TARGET_HEIGHT=0
+      ;;
+    *)
+      echo "ERROR: Unsupported profile: $name"
+      exit 1
+      ;;
+  esac
+}
+
+normalize_int_or_zero() {
+  local val="$1"
+  if [[ -z "$val" || ! "$val" =~ ^[0-9]+$ ]]; then
+    echo 0
+  else
+    echo "$val"
+  fi
+}
+
+configure_policy_defaults() {
+  PROFILE="$(to_lower "$PROFILE")"
+  apply_profile_settings "$PROFILE"
+
+  FORCE_TRANSCODE="$(normalize_int_or_zero "${FORCE_TRANSCODE:-$PROFILE_FORCE_TRANSCODE}")"
+  MAX_VIDEO_BITRATE_KBPS="$(normalize_int_or_zero "${MAX_VIDEO_BITRATE_KBPS:-$PROFILE_MAX_VIDEO_BITRATE_KBPS}")"
+  MAX_FILESIZE_MB="$(normalize_int_or_zero "${MAX_FILESIZE_MB:-$PROFILE_MAX_FILESIZE_MB}")"
+  TARGET_HEIGHT="$(normalize_int_or_zero "${TARGET_HEIGHT:-$PROFILE_TARGET_HEIGHT}")"
+
+  ENV_DEFAULTS=(
+    "$DEFAULT_PROFILE"
+    "$PROFILE_FORCE_TRANSCODE"
+    "$PROFILE_MAX_VIDEO_BITRATE_KBPS"
+    "$PROFILE_MAX_FILESIZE_MB"
+    "$PROFILE_TARGET_HEIGHT"
+    "$DEFAULT_CRF"
+    "$DEFAULT_PRESET"
+    "$DEFAULT_CODEC"
+    "$DEFAULT_HW_ACCEL"
+    "$DEFAULT_OVERWRITE"
+    "$DEFAULT_DELETE"
+    "$DEFAULT_PARALLEL"
+    "$DEFAULT_DRY_RUN"
+    "$DEFAULT_SKIP_DELETE_CONFIRM"
+    "$DEFAULT_OUTROOT"
+    "$DEFAULT_LOG_DIR"
+  )
+}
 
 print_usage() {
   cat <<EOF
@@ -53,12 +130,19 @@ Usage: $(basename "$0") [OPTIONS] [DIRECTORY]
 Convert videos under DIRECTORY into Jellyfin-friendly MKV files.
 
 Options:
+  --profile <name>          Profile: jellyfin-1080p (default), jellyfin-720p, archive, auto
+  --force-transcode         Force transcoding (overrides profile)
+  --no-force-transcode      Disable forced transcoding (overrides profile)
+  --max-video-bitrate-kbps N  Max video bitrate allowed for remux (0=ignore)
+  --max-filesize-mb N       Max file size allowed for remux (0=ignore)
+  --target-height N         Max video height allowed for remux (0=ignore)
   --preflight[=info|strict]  Run environment checks before processing
   --dry-run                  Preview actions without writing outputs (default)
   --version                  Show script version and exit
   -h, --help                 Show this help message and exit
 
 Defaults:
+  Profile=$DEFAULT_PROFILE (transcode-first)
   DRY_RUN=$DEFAULT_DRY_RUN DELETE=$DEFAULT_DELETE OUTROOT="$DEFAULT_OUTROOT" LOG_DIR="$DEFAULT_LOG_DIR"
 EOF
 }
@@ -108,6 +192,11 @@ report_env_overrides() {
   for var in "${ENV_KEYS[@]}"; do
     expected="${ENV_DEFAULTS[$idx]}"
     case "$var" in
+      PROFILE) current="$PROFILE" ;;
+      FORCE_TRANSCODE) current="$FORCE_TRANSCODE" ;;
+      MAX_VIDEO_BITRATE_KBPS) current="$MAX_VIDEO_BITRATE_KBPS" ;;
+      MAX_FILESIZE_MB) current="$MAX_FILESIZE_MB" ;;
+      TARGET_HEIGHT) current="$TARGET_HEIGHT" ;;
       CRF) current="$CRF" ;;
       PRESET) current="$PRESET" ;;
       CODEC) current="$CODEC" ;;
@@ -285,10 +374,54 @@ process_one() {
   # Container metadata
   meta_args+=("-metadata" "title=$base")
 
-  # Determine if remux is possible
-  local do_remux=0
-  if is_codec_compatible_video "$vcodec" && is_codec_compatible_audio "$acodec"; then
-    do_remux=1
+  # Remux vs transcode policy evaluation
+  local video_bitrate_kbps filesize_mb height_num height_display
+  video_bitrate_kbps=$(get_video_bitrate_kbps "$src")
+  filesize_mb=$(get_filesize_mb "$src")
+  height_num=0
+  [[ "$height" =~ ^[0-9]+$ ]] && height_num="$height"
+  if [[ "$height_num" -gt 0 ]]; then
+    height_display="${height_num}p"
+  else
+    height_display="$height"
+    [[ -z "$height_display" || "$height_display" == "?" ]] && height_display="unknown"
+  fi
+
+  local do_remux=1
+  local -a transcode_reasons=()
+  if ! is_codec_compatible_video "$vcodec" || ! is_codec_compatible_audio "$acodec"; then
+    do_remux=0
+    transcode_reasons+=("codec incompatibility (video=$vcodec audio=$acodec)")
+  fi
+  if [[ "$FORCE_TRANSCODE" -eq 1 ]]; then
+    do_remux=0
+    transcode_reasons+=("force-transcode enabled")
+  fi
+  if [[ "$MAX_VIDEO_BITRATE_KBPS" -gt 0 && "$video_bitrate_kbps" -gt "$MAX_VIDEO_BITRATE_KBPS" ]]; then
+    do_remux=0
+    transcode_reasons+=("bitrate threshold (${video_bitrate_kbps:-0} > $MAX_VIDEO_BITRATE_KBPS)")
+  fi
+  if [[ "$MAX_FILESIZE_MB" -gt 0 && "$filesize_mb" -gt "$MAX_FILESIZE_MB" ]]; then
+    do_remux=0
+    transcode_reasons+=("filesize threshold (${filesize_mb:-0} > $MAX_FILESIZE_MB)")
+  fi
+  if [[ "$TARGET_HEIGHT" -gt 0 && "$height_num" -gt "$TARGET_HEIGHT" ]]; then
+    do_remux=0
+    transcode_reasons+=("height threshold (${height_num:-0} > $TARGET_HEIGHT)")
+  fi
+
+  local profile_label="$PROFILE"
+  [[ "$PROFILE" == "$DEFAULT_PROFILE" ]] && profile_label="$PROFILE (default)"
+  echo "Profile: $profile_label"
+  echo "Video bitrate: ${video_bitrate_kbps:-0} kbps | Filesize: ${filesize_mb:-0} MB | Height: $height_display"
+
+  if [[ "$do_remux" -eq 1 ]]; then
+    echo "→ Remuxing (all thresholds satisfied)"
+  else
+    local reason
+    for reason in "${transcode_reasons[@]}"; do
+      echo "→ Transcoding due to $reason"
+    done
   fi
 
   # Subtitle codec (copy ASS/SSA, convert SUB to SRT)
@@ -344,7 +477,7 @@ process_one() {
       rm -f "$out"
     fi
   else
-    echo "→ Transcoding required (incompatible codecs)"
+    echo "→ Transcoding per policy"
   fi
 
   # TRANSCODE
@@ -445,7 +578,7 @@ process_one() {
 
 # Export functions for parallel processing
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
-export -f detect_hw_accel get_optimal_crf log_conversion encoder_present
+export -f detect_hw_accel get_optimal_crf log_conversion encoder_present get_video_bitrate_kbps get_filesize_mb
 export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title
 export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
@@ -455,6 +588,62 @@ while [[ $# -gt 0 ]]; do
     --help|-h)
       print_usage
       exit 0
+      ;;
+    --profile)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --profile requires a value"
+        exit 1
+      fi
+      PROFILE="$2"
+      shift 2
+      ;;
+    --profile=*)
+      PROFILE="${1#*=}"
+      shift
+      ;;
+    --force-transcode)
+      FORCE_TRANSCODE=1
+      shift
+      ;;
+    --no-force-transcode)
+      FORCE_TRANSCODE=0
+      shift
+      ;;
+    --max-video-bitrate-kbps)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --max-video-bitrate-kbps requires a value"
+        exit 1
+      fi
+      MAX_VIDEO_BITRATE_KBPS="$2"
+      shift 2
+      ;;
+    --max-video-bitrate-kbps=*)
+      MAX_VIDEO_BITRATE_KBPS="${1#*=}"
+      shift
+      ;;
+    --max-filesize-mb)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --max-filesize-mb requires a value"
+        exit 1
+      fi
+      MAX_FILESIZE_MB="$2"
+      shift 2
+      ;;
+    --max-filesize-mb=*)
+      MAX_FILESIZE_MB="${1#*=}"
+      shift
+      ;;
+    --target-height)
+      if [[ -z "${2:-}" ]]; then
+        echo "ERROR: --target-height requires a value"
+        exit 1
+      fi
+      TARGET_HEIGHT="$2"
+      shift 2
+      ;;
+    --target-height=*)
+      TARGET_HEIGHT="${1#*=}"
+      shift
       ;;
     --version)
       echo "jellyfin_converter v$SCRIPT_VERSION"
@@ -511,6 +700,7 @@ else
   select_folder
 fi
 
+configure_policy_defaults
 resolve_outroot
 
 # Now set up log files after SCAN_DIR is determined
@@ -534,6 +724,10 @@ echo ""
 echo "Supported formats: ${VIDEO_FORMATS//|/, }"
 echo ""
 echo "Settings:"
+profile_label="$PROFILE"
+[[ "$PROFILE" == "$DEFAULT_PROFILE" ]] && profile_label="$PROFILE (default)"
+echo "  Profile: $profile_label"
+echo "  Policy: force=$FORCE_TRANSCODE | Max bitrate: $MAX_VIDEO_BITRATE_KBPS kbps | Max size: $MAX_FILESIZE_MB MB | Target height: $TARGET_HEIGHT"
 echo "  Codec: $CODEC | CRF: $CRF | Preset: $PRESET"
 echo "  HW Accel: ${RESOLVED_HW:-$HW_ACCEL} | Parallel: $PARALLEL"
 echo "  Delete originals: $DELETE | Dry run: $DRY_RUN"
