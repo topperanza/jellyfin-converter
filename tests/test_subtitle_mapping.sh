@@ -22,7 +22,7 @@ printf 'dummy' >"$WORKDIR/withsubs.eng.srt"
 
 cat >"$STUB_BIN/ffmpeg" <<'EOF'
 #!/usr/bin/env bash
-out="${@: -1}"
+out="${!#}"
 echo "FFMPEG $*" >>"$FFMPEG_CALLS"
 mkdir -p "$(dirname "$out")"
 printf 'converted' >"$out"
@@ -30,12 +30,13 @@ EOF
 
 cat >"$STUB_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
-src="${@: -1}"
+src="${!#}"
 
 if echo "$*" | grep -q -- "-select_streams s"; then
   if echo "$src" | grep -q "withsubs"; then
-    echo "0,subrip,eng,English SDH"
-    echo "1,subrip,und,Director Commentary"
+    echo "0,subrip,eng,English SDH,0,0"
+    echo "1,subrip,und,Director Commentary,0,0"
+    echo "2,subrip,rus,Russian Track,0,0"
   fi
   exit 0
 fi
@@ -84,4 +85,5 @@ nosubs_cmd="$(grep "nosubs" "$FFMPEG_CALLS" | head -n 1)"
 [[ "$withsubs_cmd" == *"-map 0:s:0"* ]]
 [[ "$withsubs_cmd" == *"-map 0:s:1"* ]]
 [[ "$withsubs_cmd" == *"-map 1:s:0"* ]]
+[[ "$withsubs_cmd" != *"-map 0:s:2"* ]]
 [[ "$nosubs_cmd" != *":s:"* ]]

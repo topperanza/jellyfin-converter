@@ -281,3 +281,84 @@ else
     fi
   }
 fi
+
+SUBTITLE_SELECTION_MAP_ARGS=()
+SUBTITLE_INTERNAL_COUNT=0
+
+select_internal_subtitles() {
+  local subtitle_info="$1"
+
+  SUBTITLE_SELECTION_MAP_ARGS=()
+  SUBTITLE_INTERNAL_COUNT=0
+
+  local -a russian_candidates=()
+  local has_eng_or_ita=0
+  local has_commentary=0
+
+  if [[ -n "$subtitle_info" ]]; then
+    while IFS=, read -r sub_stream_idx sub_codec sub_lang sub_title _sub_default sub_forced; do
+      [[ -z "$sub_stream_idx" || ! "$sub_stream_idx" =~ ^[0-9]+$ ]] && continue
+
+      local mapped_lang; mapped_lang="$(map_lang "$sub_lang")"
+      local is_commentary=0
+      is_commentary_title "$sub_title" && is_commentary=1
+      local is_forced=0
+      [[ "${sub_forced:-0}" -gt 0 ]] && is_forced=1
+      local is_russian=0
+      [[ "$mapped_lang" == "rus" ]] && is_russian=1
+
+      local display_lang="$mapped_lang"
+      [[ -z "$display_lang" && -n "$sub_lang" ]] && display_lang="$sub_lang"
+      [[ -z "$display_lang" ]] && display_lang="unknown"
+      [[ "$is_commentary" -eq 1 ]] && display_lang="commentary"
+
+      local codec_label="$sub_codec"
+      [[ -z "$codec_label" ]] && codec_label="unknown"
+
+      if [[ "$is_commentary" -eq 1 ]]; then
+        SUBTITLE_SELECTION_MAP_ARGS+=("-map" "0:s:${sub_stream_idx}")
+        ((SUBTITLE_INTERNAL_COUNT+=1))
+        has_commentary=1
+        echo "  → Keeping subtitle track $sub_stream_idx: $display_lang ($codec_label)"
+        continue
+      fi
+
+      if [[ "$is_forced" -eq 1 ]]; then
+        SUBTITLE_SELECTION_MAP_ARGS+=("-map" "0:s:${sub_stream_idx}")
+        ((SUBTITLE_INTERNAL_COUNT+=1))
+        [[ "$mapped_lang" == "eng" || "$mapped_lang" == "ita" ]] && has_eng_or_ita=1
+        echo "  → Keeping subtitle track $sub_stream_idx: $display_lang ($codec_label, forced)"
+        continue
+      fi
+
+      if is_eng_or_ita "$mapped_lang"; then
+        SUBTITLE_SELECTION_MAP_ARGS+=("-map" "0:s:${sub_stream_idx}")
+        ((SUBTITLE_INTERNAL_COUNT+=1))
+        has_eng_or_ita=1
+        echo "  → Keeping subtitle track $sub_stream_idx: $display_lang ($codec_label)"
+      elif [[ "$is_russian" -eq 1 ]]; then
+        russian_candidates+=("${sub_stream_idx}|${codec_label}|${display_lang}")
+      elif [[ -n "$mapped_lang" || -n "$sub_lang" ]]; then
+        SUBTITLE_SELECTION_MAP_ARGS+=("-map" "0:s:${sub_stream_idx}")
+        ((SUBTITLE_INTERNAL_COUNT+=1))
+        echo "  → Keeping subtitle track $sub_stream_idx: $display_lang ($codec_label)"
+      fi
+    done <<< "$subtitle_info" || true
+  fi
+
+  if [[ "$has_eng_or_ita" -eq 0 && "$has_commentary" -eq 0 ]]; then
+    local entry
+    for entry in "${russian_candidates[@]}"; do
+      IFS='|' read -r idx codec_label display_lang <<< "$entry"
+      SUBTITLE_SELECTION_MAP_ARGS+=("-map" "0:s:${idx}")
+      ((SUBTITLE_INTERNAL_COUNT+=1))
+      echo "  → Keeping subtitle track $idx: $display_lang ($codec_label)"
+    done
+  else
+    local entry
+    for entry in "${russian_candidates[@]}"; do
+      IFS='|' read -r idx codec_label _display_lang <<< "$entry"
+      echo "  × Skipping subtitle track $idx: rus (eng/ita/commentary present)"
+    done
+  fi
+}
