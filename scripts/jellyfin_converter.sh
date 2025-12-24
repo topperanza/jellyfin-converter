@@ -332,7 +332,8 @@ process_one() {
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
 
-  local -a subtitle_map_args=()
+  declare -a subtitle_map_args
+  subtitle_map_args=()
   local internal_sub_count=0
   local subtitle_info
   subtitle_info=$(ffprobe -v error -select_streams s \
