@@ -275,6 +275,14 @@ process_one() {
   sub_langs=()
   sub_forced=()
   sub_files=()
+  declare -a subtitle_map_args
+  subtitle_map_args=()
+  declare -a audio_map_args
+  audio_map_args=()
+  declare -a russian_tracks
+  russian_tracks=()
+  local has_eng_or_ita=0
+  local has_non_russian=0
   local sub_idx=0
   local rel="${src#$SCAN_DIR/}"
   local srcdir; srcdir="$(dirname "$rel")"
@@ -324,16 +332,8 @@ process_one() {
   local audio_info=$(ffprobe -v error -select_streams a -show_entries \
     stream=index:stream_tags=language,title -of csv=p=0 "$src" 2>/dev/null || echo "")
 
-  local -a audio_map_args=()
-  local -a russian_tracks=()
-  local has_eng_or_ita=0
-  local has_non_russian=0
-
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
-
-  declare -a subtitle_map_args
-  subtitle_map_args=()
   local internal_sub_count=0
   local subtitle_info
   subtitle_info=$(ffprobe -v error -select_streams s \
