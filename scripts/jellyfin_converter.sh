@@ -21,7 +21,7 @@ PROJECT_ROOT="$(cd -- "$SCRIPT_DIR/.." && pwd)"
 VERSION_FILE="$PROJECT_ROOT/VERSION"
 SCRIPT_VERSION="0.0.0-dev"
 if [[ -f "$VERSION_FILE" ]]; then
-  read -r SCRIPT_VERSION <"$VERSION_FILE"
+  read -r SCRIPT_VERSION <"$VERSION_FILE" || true
   SCRIPT_VERSION="${SCRIPT_VERSION:-0.0.0-dev}"
 fi
 
@@ -30,7 +30,7 @@ source "$SCRIPT_DIR/lib/ffmpeg.sh"
 source "$SCRIPT_DIR/lib/media_filters.sh"
 source "$SCRIPT_DIR/lib/io.sh"
 
-SCAN_DIR=""
+SCAN_DIR="${SCAN_DIR:-}"
 DEFAULT_OUTROOT="converted"
 DEFAULT_LOG_DIR="$PROJECT_ROOT/logs"
 DEFAULT_CRF=20
@@ -290,6 +290,8 @@ process_one() {
   local -a subtitle_map_args=()
   local -a audio_map_args=()
   local -a russian_tracks=()
+  local -a SUBTITLE_SELECTION_MAP_ARGS=()
+  local SUBTITLE_INTERNAL_COUNT=0
   local has_eng_or_ita=0
   local has_non_russian=0
   local sub_idx=0
@@ -329,17 +331,17 @@ process_one() {
   # Probe video/audio codecs
   local vcodec acodec
   vcodec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name \
-           -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
+           -of default=nw=1:nk=1 "$src" < /dev/null 2>/dev/null || echo "unknown")
   acodec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
-           -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "none")
+           -of default=nw=1:nk=1 "$src" < /dev/null 2>/dev/null || echo "none")
   
   local height=$(ffprobe -v error -select_streams v:0 \
-    -show_entries stream=height -of csv=p=0 "$src" 2>/dev/null || echo "?")
+    -show_entries stream=height -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "?")
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
 
   local audio_info=$(ffprobe -v error -select_streams a -show_entries \
-    stream=index:stream_tags=language,title -of csv=p=0 "$src" 2>/dev/null || echo "")
+    stream=index:stream_tags=language,title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
 
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
@@ -347,10 +349,14 @@ process_one() {
   local subtitle_info
   subtitle_info=$(ffprobe -v error -select_streams s \
     -show_entries stream=index,codec_name:stream_tags=language,title:stream_disposition=default,forced \
-    -of csv=p=0 "$src" 2>/dev/null || true)
+    -of csv=p=0 "$src" < /dev/null 2>/dev/null || true)
 
+  # Select internal subtitles to keep (populates SUBTITLE_SELECTION_MAP_ARGS)
   select_internal_subtitles "$subtitle_info"
-  subtitle_map_args=("${SUBTITLE_SELECTION_MAP_ARGS[@]}")
+
+  if [[ ${#SUBTITLE_SELECTION_MAP_ARGS[@]} -gt 0 ]]; then
+    subtitle_map_args=("${SUBTITLE_SELECTION_MAP_ARGS[@]}")
+  fi
   internal_sub_count="$SUBTITLE_INTERNAL_COUNT"
 
   # Subtitle discovery (check all supported extensions)
@@ -388,8 +394,12 @@ process_one() {
   fi
 
   local -a map_args=("-map" "0:v:0")
-  map_args+=("${audio_map_args[@]}")
-  map_args+=("${subtitle_map_args[@]}")
+  if [[ ${#audio_map_args[@]} -gt 0 ]]; then
+    map_args+=("${audio_map_args[@]}")
+  fi
+  if [[ ${#subtitle_map_args[@]} -gt 0 ]]; then
+    map_args+=("${subtitle_map_args[@]}")
+  fi
 
   # Build metadata args for subtitles
   local -a meta_args=()
@@ -452,9 +462,11 @@ process_one() {
     echo "→ Remuxing (all thresholds satisfied)"
   else
     local reason
-    for reason in "${transcode_reasons[@]}"; do
-      echo "→ Transcoding due to $reason"
-    done
+    if [[ ${#transcode_reasons[@]} -gt 0 ]]; then
+      for reason in "${transcode_reasons[@]}"; do
+        echo "→ Transcoding due to $reason"
+      done
+    fi
   fi
 
   # Subtitle codec (copy ASS/SSA, convert SUB to SRT)
@@ -495,7 +507,11 @@ process_one() {
         log_conversion "$src" "$out" "remux"
         
         if [[ "$DELETE" == "1" ]]; then
-          rm -f "$src" "${sub_files[@]}"
+          if [[ ${#sub_files[@]} -gt 0 ]]; then
+            rm -f "$src" "${sub_files[@]}"
+          else
+            rm -f "$src"
+          fi
           echo "✓ Deleted originals"
         fi
         
@@ -584,7 +600,9 @@ process_one() {
   local -a trans_cmd=("${cmd_base[@]}")
   trans_cmd+=("${encode_args[@]}")
   trans_cmd+=("${audio_encode_args[@]}")
-  trans_cmd+=("${filter_args[@]}")
+  if [[ ${#filter_args[@]} -gt 0 ]]; then
+    trans_cmd+=("${filter_args[@]}")
+  fi
   if [[ ${#sub_codec_args[@]} -gt 0 ]]; then
     trans_cmd+=("${sub_codec_args[@]}")
   fi
@@ -621,6 +639,7 @@ process_one() {
 export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_compatible_audio
 export -f detect_hw_accel get_optimal_crf log_conversion encoder_present get_video_bitrate_kbps get_filesize_mb
 export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title select_internal_subtitles
+export -f run_ffmpeg
 export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
 
 # Argument parsing for preflight flag + optional path
@@ -817,7 +836,7 @@ if command -v parallel >/dev/null 2>&1 && [[ "$PARALLEL" -gt 1 ]]; then
     parallel -0 -j "$PARALLEL" --bar process_one {}
 else
   find "$SCAN_DIR" -type f \( "${find_args[@]}" \) -print0 | while IFS= read -r -d '' f; do
-    process_one "$f"
+    process_one "$f" < /dev/null
   done
 fi
 
