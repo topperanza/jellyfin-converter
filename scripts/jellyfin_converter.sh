@@ -29,6 +29,7 @@ source "$SCRIPT_DIR/lib/compat.sh"
 source "$SCRIPT_DIR/lib/ffmpeg.sh"
 source "$SCRIPT_DIR/lib/media_filters.sh"
 source "$SCRIPT_DIR/lib/io.sh"
+source "$SCRIPT_DIR/lib/process.sh"
 
 SCAN_DIR="${SCAN_DIR:-}"
 DEFAULT_OUTROOT="converted"
@@ -280,7 +281,7 @@ need_cmd find "install findutils/coreutils via your package manager"
 need_cmd df "install coreutils (df) via your package manager"
 echo "INFO: Hardware acceleration (nvenc/qsv/vaapi) requires appropriate GPU drivers"
 
-process_one() {
+process_one_OLD_unused() {
   local src="$1"
   local src_full_dir; src_full_dir="$(dirname "$src")"
   local -a sub_inputs=()
@@ -295,6 +296,7 @@ process_one() {
   local has_eng_or_ita=0
   local has_non_russian=0
   local sub_idx=0
+  local -a sub_inputs=() sub_langs=() sub_forced=() sub_files=()
   local rel="${src#$SCAN_DIR/}"
   local srcdir; srcdir="$(dirname "$rel")"
   local filename; filename="$(basename "$rel")"
@@ -340,17 +342,44 @@ process_one() {
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
 
-  local audio_info=$(ffprobe -v error -select_streams a -show_entries \
-    stream=index:stream_tags=language,title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+  # 1. Get list of audio streams (index)
+  local audio_indices
+  audio_indices=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+  
+  # 2. Build audio info manually (reliable)
+  local audio_info=""
+  if [[ -n "$audio_indices" ]]; then
+    for idx in $audio_indices; do
+      local lang title
+      lang=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:language -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "und")
+      title=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+      # Construct CSV line: index,lang,title
+      audio_info+="${idx},${lang:-und},${title}"$'\n'
+    done
+  fi
 
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
-  local internal_sub_count=0
-  local subtitle_info
-  subtitle_info=$(ffprobe -v error -select_streams s \
-    -show_entries stream=index,codec_name:stream_tags=language,title:stream_disposition=default,forced \
-    -of csv=p=0 "$src" < /dev/null 2>/dev/null || true)
 
+  # 3. Get list of subtitle streams (index,codec,disposition)
+  local subtitle_indices_csv
+  subtitle_indices_csv=$(ffprobe -v error -select_streams s \
+    -show_entries stream=index,codec_name,disposition:default,forced \
+    -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+    
+  # 4. Build subtitle info manually (reliable)
+  local subtitle_info=""
+  if [[ -n "$subtitle_indices_csv" ]]; then
+    while IFS=, read -r idx codec def forced; do
+      local lang title
+      lang=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:language -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "und")
+      title=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+      # Construct CSV line: index,codec,lang,title,default,forced
+      subtitle_info+="${idx},${codec},${lang:-und},${title},${def},${forced}"$'\n'
+    done <<< "$subtitle_indices_csv"
+  fi
+
+  local internal_sub_count=0
   # Select internal subtitles to keep (populates SUBTITLE_SELECTION_MAP_ARGS)
   select_internal_subtitles "$subtitle_info"
 
@@ -575,20 +604,46 @@ process_one() {
   esac
 
   # Audio encoding strategy
-  local channels=$(ffprobe -v error -select_streams a:0 \
-    -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
-  
-  local -a audio_encode_args=()
-  if [[ "$channels" -gt 2 ]] && is_codec_compatible_audio "$acodec"; then
-    audio_encode_args=(-c:a copy)
-    echo "→ Preserving multi-channel audio ($channels ch)"
-  elif [[ "$channels" -gt 2 ]]; then
-    audio_encode_args=(-c:a ac3 -b:a 640k)
-    echo "→ Encoding multi-channel to AC3 ($channels ch)"
-  else
-    audio_encode_args=(-c:a aac -b:a 128k)
-    echo "→ Encoding stereo to AAC"
+  local max_channels=2
+  local best_acodec="unknown"
+
+  # Scan all selected audio tracks to find max channels
+  if [[ ${#audio_map_args[@]} -gt 0 ]]; then
+    local i
+    # Iterate skipping "-map" entries
+    for ((i=1; i<${#audio_map_args[@]}; i+=2)); do
+      local map_val="${audio_map_args[$i]}"
+      local idx="${map_val#0:}"
+      # Support both old relative "a:0" and new absolute "1" indices
+      local spec="0:$idx"
+
+      local ch=$(ffprobe -v error -select_streams "$spec" -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
+      local codec=$(ffprobe -v error -select_streams "$spec" -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
+      
+      # Sanitize channel count
+      [[ -z "$ch" || ! "$ch" =~ ^[0-9]+$ ]] && ch=2
+      
+      # Debug logging
+      echo "  → [Debug] Checking stream $spec: channels=$ch codec=$codec"
+
+      if [[ "$ch" -gt "$max_channels" ]]; then
+        max_channels="$ch"
+        best_acodec="$codec"
+      fi
+    done
   fi
+
+  local channels="$max_channels"
+  local selected_acodec="$best_acodec"
+
+  local -a audio_encode_args=()
+  # Always downmix to stereo as requested
+  if [[ "$channels" -gt 2 ]]; then
+    echo "→ Downmixing multi-channel ($channels ch) to Stereo AAC (192k)"
+  else
+    echo "→ Encoding stereo to AAC (192k)"
+  fi
+  audio_encode_args=(-c:a aac -b:a 192k -ac 2)
 
   local -a filter_args=()
   if [[ "$TARGET_HEIGHT" -gt 0 && "$height_num" -gt "$TARGET_HEIGHT" ]]; then
