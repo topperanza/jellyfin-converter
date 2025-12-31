@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [ "main", "master" ]
+  pull_request:
+    branches: [ "main", "master" ]
+
+jobs:
+  test:
+    name: Run Checks and Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg shellcheck
+
+      - name: Check Bash Syntax (bash -n)
+        run: |
+          find . -name "*.sh" -not -path "./tests/tmp/*" -print0 | xargs -0 bash -n
+
+      - name: Run ShellCheck
+        run: |
+          # Exclude tests directory for now as tests often break shellcheck rules
+          # Also exclude library scripts if they have too many legacy issues, 
+          # but we aim to check everything.
+          # We use a config file or flags if needed. For now, standard check.
+          find scripts -name "*.sh" -print0 | xargs -0 shellcheck --format=gcc
+
+      - name: Run Test Harness
+        run: |
+          # Run all suites and test files
+          ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
+          
+      - name: Upload Test Logs
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-logs
+          path: tests/tmp/**/*.log
