@@ -52,6 +52,11 @@ test_suite_logic() {
   # 2. Integration Test: No Subtitles Crash
   echo "--- Integration Test: No Subtitles (Crash Check) ---"
 
+  if ! command -v ffmpeg >/dev/null 2>&1; then
+    echo "SKIP: ffmpeg not found, skipping integration test"
+    return 0
+  fi
+
   local INPUT_VIDEO="$TEST_TEMP_DIR/input_nosubs.mkv"
   # Generate 1s video, no audio, no subs
   ffmpeg -f lavfi -i testsrc=duration=1:size=640x360:rate=1 -c:v libx264 "$INPUT_VIDEO" >/dev/null 2>&1
