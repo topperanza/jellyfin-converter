@@ -25,3 +25,14 @@ __pycache__/
 *.swp
 *.swo
 
+# --------------------------------------------------
+# Test artifacts & Temporary files
+# --------------------------------------------------
+tests/tmp/
+*.log
+/debug_output.txt
+/test_output.txt
+/test.txt
+/dummy.mkv
+/-encoders
+/-encoders.subs

@@ -1,0 +1,3 @@
+0|subrip|eng|English|0|0|0
+1|hdmv_pgs_subtitle|rus|Main Forced|0|1|0
+2|subrip|rus|Regular|0|0|0

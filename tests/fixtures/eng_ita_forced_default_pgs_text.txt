@@ -1,0 +1,7 @@
+0|subrip|eng|English|0|0|0
+1|hdmv_pgs_subtitle|eng|English Forced|0|1|0
+2|ass|eng|English SDH|1|0|0
+3|hdmv_pgs_subtitle|ita|Italian|0|0|0
+4|subrip|ita|Italian Forced|0|1|0
+5|subrip|ita|Italian|1|0|0
+6|hdmv_pgs_subtitle|eng|English Alt|0|0|0

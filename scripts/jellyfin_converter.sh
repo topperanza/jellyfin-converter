@@ -44,6 +44,7 @@ DEFAULT_PARALLEL=1
 DEFAULT_DRY_RUN=1
 DEFAULT_SKIP_DELETE_CONFIRM=0
 DEFAULT_PROFILE="jellyfin-1080p"
+DEFAULT_PRINT_SUBTITLES=0
 
 PROFILE="${PROFILE:-$DEFAULT_PROFILE}"
 FORCE_TRANSCODE="${FORCE_TRANSCODE:-}"
@@ -52,7 +53,7 @@ MAX_FILESIZE_MB="${MAX_FILESIZE_MB:-}"
 REMUX_MAX_GB="${REMUX_MAX_GB:-}"
 TARGET_HEIGHT="${TARGET_HEIGHT:-}"
 
-ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB REMUX_MAX_GB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR)
+ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB REMUX_MAX_GB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR PRINT_SUBTITLES)
 ENV_DEFAULTS=()
 PROFILE_FORCE_TRANSCODE=0
 PROFILE_MAX_VIDEO_BITRATE_KBPS=0
@@ -134,6 +135,7 @@ configure_policy_defaults() {
     "$DEFAULT_SKIP_DELETE_CONFIRM"
     "$DEFAULT_OUTROOT"
     "$DEFAULT_LOG_DIR"
+    "$DEFAULT_PRINT_SUBTITLES"
   )
 }
 
@@ -151,6 +153,7 @@ Options:
   --max-filesize-mb N       Max file size allowed for remux (0=ignore)
   --target-height N         Max video height allowed for remux (0=ignore)
   --preflight[=info|strict]  Run environment checks before processing
+  --print-subtitles          Debug: Print subtitle inventory and selection plan
   --dry-run                  Preview actions without writing outputs (default)
   --version                  Show script version and exit
   -h, --help                 Show this help message and exit
@@ -695,7 +698,7 @@ export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_
 export -f detect_hw_accel get_optimal_crf log_conversion encoder_present get_video_bitrate_kbps get_filesize_mb
 export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title select_internal_subtitles
 export -f run_ffmpeg
-export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE
+export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE PRINT_SUBTITLES
 
 # Argument parsing for preflight flag + optional path
 while [[ $# -gt 0 ]]; do
@@ -774,6 +777,10 @@ while [[ $# -gt 0 ]]; do
       ;;
     --preflight=strict|--preflight-strict)
       PREFLIGHT_MODE="strict"
+      shift
+      ;;
+    --print-subtitles)
+      PRINT_SUBTITLES=1
       shift
       ;;
     --dry-run)
