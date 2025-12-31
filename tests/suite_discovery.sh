@@ -29,12 +29,11 @@ test_discovery_case2_dots() {
   # show.S01E01.en.sdh.srt -> eng|0|1|0|srt
   # show.S01E01.commentary.srt -> und|0|0|1|srt
   
-  # NOTE: discover_external_subs deduplicates by lang|forced.
-  # en.srt (eng|0) and en.sdh.srt (eng|0) collide.
-  # With PREFER_SDH=0 (default), en.srt wins.
+  # NOTE: discover_external_subs NO LONGER deduplicates.
+  # All files should be present.
   
   assert_contains "$output" "show.S01E01.en.srt|eng|0|0|0|srt"
-  assert_not_contains "$output" "show.S01E01.en.sdh.srt"
+  assert_contains "$output" "show.S01E01.en.sdh.srt"
   
   # Commentary should be preserved (it's separate category? No, check key)
   # Commentary logic:

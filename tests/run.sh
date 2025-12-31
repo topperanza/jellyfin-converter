@@ -66,6 +66,7 @@ run_suite() {
   
   (
     # Load the test file
+    # shellcheck source=/dev/null
     source "$suite_file"
 
     # Auto-discover test functions (starting with test_)
@@ -101,12 +102,25 @@ run_suite() {
 
     exit "$suite_failed"
   )
+  local status=$?
 
   # Check subshell exit code
-  if [[ $? -ne 0 ]]; then
+  if [[ $status -ne 0 ]]; then
+    echo "Suite failed: $suite_file (exit code $status)"
     ((SUITES_FAILED+=1))
   fi
 }
+
+run_test_cmd() {
+  local cmd="$1"
+  if ! $cmd; then
+    fail "Command failed: $cmd"
+  fi
+}
+
+# -----------------------------------------------------------------------------
+# Main
+# -----------------------------------------------------------------------------
 
 main() {
   local pattern="${1:-tests/suite_*.sh}"

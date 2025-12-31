@@ -2,44 +2,51 @@ name: CI
 
 on:
   push:
-    branches: [ "main", "master" ]
   pull_request:
-    branches: [ "main", "master" ]
 
 jobs:
-  test:
-    name: Run Checks and Tests
-    runs-on: ubuntu-latest
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
 
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
 
-      - name: Install dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y ffmpeg shellcheck
+      - name: Show Bash version
+        run: bash --version
 
-      - name: Check Bash Syntax (bash -n)
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ShellCheck
         run: |
-          find . -name "*.sh" -not -path "./tests/tmp/*" -print0 | xargs -0 bash -n
+          python -m pip install -U pip
+          python -m pip install shellcheck-py
+
+      - name: Verify ShellCheck
+        run: shellcheck --version
+
+      - name: Bash Syntax Check
+        run: |
+          find . -type f -name "*.sh" -print0 | xargs -0 bash -n
 
       - name: Run ShellCheck
         run: |
-          # Exclude tests directory for now as tests often break shellcheck rules
-          # Also exclude library scripts if they have too many legacy issues, 
-          # but we aim to check everything.
-          # We use a config file or flags if needed. For now, standard check.
-          find scripts -name "*.sh" -print0 | xargs -0 shellcheck --format=gcc
+          find . -type f -name "*.sh" \
+            -not -path "./.git/*" \
+            -not -path "./.venv/*" \
+            -print0 | xargs -0 shellcheck -x
 
-      - name: Run Test Harness
+      - name: Run Tests
         run: |
-          # Run all suites and test files
-          ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
-          
-      - name: Upload Test Logs
-        if: failure()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-logs
-          path: tests/tmp/**/*.log
+          if [ -x "./tests/run.sh" ]; then
+            ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
+          elif [ -f "./tests/run.sh" ]; then
+            bash ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
+          else
+            echo "No test runner found."
+          fi

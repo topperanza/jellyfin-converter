@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 
 LIB_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# shellcheck source=scripts/lib/compat.sh
 source "$LIB_DIR/compat.sh"
 
 # Language mapping with English/Italian focus
@@ -55,7 +56,8 @@ probe_internal_subs() {
 }
 
 is_text_codec() {
-  local c="$(to_lower "$1")"
+  local c
+  c="$(to_lower "$1")"
   case "$c" in
     subrip|ass|ssa|mov_text|webvtt|microdvd|sami|subviewer|realtext) return 0 ;;
     *) return 1 ;;
@@ -63,7 +65,8 @@ is_text_codec() {
 }
 
 is_bitmap_codec() {
-  local c="$(to_lower "$1")"
+  local c
+  c="$(to_lower "$1")"
   case "$c" in
     hdmv_pgs_subtitle|dvdsub|xsub|dvb_subtitle|pgssub) return 0 ;;
     *) return 1 ;;
@@ -153,7 +156,7 @@ if have_bash_ge_4; then
 
     local fname; fname="$(basename "$subfile")"
     # Remove the base filename prefix
-    local rest="${fname#${base}}"
+    local rest="${fname#"${base}"}"
     # Remove extension
     rest="${rest%.*}"
     
@@ -200,6 +203,7 @@ if have_bash_ge_4; then
     fi
   }
 else
+  # shellcheck disable=SC2128,SC2178,SC2154
   build_audio_map_args() {
     local audio_info="$1"
     local out_map_args="$2"
@@ -247,6 +251,7 @@ else
     return 0
   }
 
+  # shellcheck disable=SC2128,SC2178,SC2154
   finalize_audio_selection() {
     local _audio_map_args="$1"
     local _russian_tracks="$2"
@@ -286,7 +291,7 @@ else
 
     local fname; fname="$(basename "$subfile")"
     # Remove the base filename prefix
-    local rest="${fname#${base}}"
+    local rest="${fname#"${base}"}"
     # Remove extension
     rest="${rest%.*}"
     
@@ -347,6 +352,7 @@ select_internal_subtitles() {
       [[ -z "$__line__" ]] && continue
       local __sep__=","
       [[ "$__line__" == *"|"* ]] && __sep__="|"
+      # shellcheck disable=SC2034
       IFS="$__sep__" read -r sub_stream_idx sub_codec sub_lang sub_title sub_default sub_forced sub_hi <<< "$__line__"
       [[ -z "$sub_stream_idx" || ! "$sub_stream_idx" =~ ^[0-9]+$ ]] && continue
       local mapped_lang; mapped_lang="$(map_lang "$sub_lang")"
@@ -421,6 +427,20 @@ select_internal_subtitles() {
       fi
     done < <(printf '%s' "$ranks_buf" | sort -t '|' -k1,1n -k2,2n)
   fi
+
+  if [[ "$SUBTITLE_INTERNAL_COUNT" -eq 0 && -n "$ranks_buf" ]]; then
+    # Fallback: Pick the highest ranked track (first in sorted list)
+    local first_line
+    first_line=$(printf '%s' "$ranks_buf" | sort -t '|' -k1,1n -k2,2n | head -n1)
+    if [[ -n "$first_line" ]]; then
+      # shellcheck disable=SC2034
+      IFS='|' read -r rank idx lang codec is_forced is_default is_commentary <<< "$first_line"
+      SUBTITLE_SELECTION_MAP_ARGS+=("-map" "0:$idx")
+      ((SUBTITLE_INTERNAL_COUNT+=1))
+      SUBTITLE_SELECTED_INDEXES+=" $idx"
+      echo "  → Keeping subtitle track $idx: $lang ($codec) [fallback]"
+    fi
+  fi
 }
 
 discover_external_subs() {
@@ -450,7 +470,7 @@ discover_external_subs() {
     elif [[ "$stem" == "$base"* ]]; then
       local next_char="${stem:${#base}:1}"
       case "$next_char" in
-        .|_|-|\ |\( |\(|\)|\[|\]) ;;
+        .|_|-|\ |\(|\)|\[|\]) ;;
         *) continue ;;
       esac
       rest="${stem:${#base}}"
@@ -480,40 +500,7 @@ discover_external_subs() {
     return 0
   fi
 
-  local out_buf=""
-  local key best_line best_rank line _path _lang _forced _sdh _commentary _ext
-  while IFS= read -r key; do
-    best_line=""; best_rank=9999
-    while IFS= read -r line; do
-      IFS='|' read -r _path _lang _forced _sdh _commentary _ext <<< "$line"
-      [[ "${_lang}|${_forced}" != "$key" ]] && continue
-      local rank=0
-      if [[ "$include_commentary" -eq 1 ]]; then
-        [[ "$_commentary" -eq 1 ]] && rank=$((rank+2))
-      else
-        [[ "$_commentary" -eq 1 ]] && rank=$((rank+50))
-      fi
-      if [[ "$prefer_sdh" -eq 1 ]]; then
-        [[ "$_sdh" -eq 0 ]] && rank=$((rank+1))
-      else
-        [[ "$_sdh" -eq 1 ]] && rank=$((rank+1))
-      fi
-      case "$_ext" in
-        srt) rank=$((rank+0)) ;;
-        vtt) rank=$((rank+1)) ;;
-        ass) rank=$((rank+2)) ;;
-        ssa) rank=$((rank+3)) ;;
-        *) rank=$((rank+4)) ;;
-      esac
-      if [[ "$rank" -lt "$best_rank" ]]; then
-        best_rank="$rank"
-        best_line="$line"
-      fi
-    done <<< "$candidates"
-    [[ -n "$best_line" ]] && out_buf+="$best_line"$'\n'
-  done < <(printf '%s' "$candidates" | awk -F'|' '{print $2"|"$3}' | sort -u)
-
-  printf '%s' "$out_buf" | sed '/^$/d'
+  printf '%s' "$candidates"
 }
 
 build_subtitle_plan() {
@@ -614,9 +601,6 @@ build_subtitle_plan() {
   # - Eng/Ita: 1 Normal, 1 Forced
   # - Others: 1 Forced
   
-  local ENG_NORM=0 ENG_FORC=0
-  local ITA_NORM=0 ITA_FORC=0
-  local -a CHOSEN_OTHERS_FORCED=()
   local CHOSEN_KEYS=""
   local DEFAULT_ASSIGNED=0
   

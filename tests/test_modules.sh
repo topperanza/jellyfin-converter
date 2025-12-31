@@ -45,7 +45,7 @@ finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_n
 [[ "${#russian_tracks[@]}" -eq 1 ]]
 [[ "$has_eng_or_ita" -eq 1 ]]
 
-declare -a sub_inputs sub_langs sub_forced sub_files
+declare -a sub_inputs sub_langs sub_forced
 sub_idx=0
 collect_subtitle "/tmp/sample.base.en.srt" "sample.base" sub_inputs sub_langs sub_forced sub_files sub_idx
 collect_subtitle "/tmp/sample.base.commentary.srt" "sample.base" sub_inputs sub_langs sub_forced sub_files sub_idx

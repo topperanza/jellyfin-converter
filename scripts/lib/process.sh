@@ -3,21 +3,17 @@
 
 process_one() {
   local src="$1"
-  local src_full_dir; src_full_dir="$(dirname "$src")"
+  # shellcheck disable=SC2034
   local -a sub_inputs=()
-  local -a sub_langs=()
-  local -a sub_forced=()
   local -a sub_files=()
   local -a subtitle_map_args=()
   local -a audio_map_args=()
+  # shellcheck disable=SC2034
   local -a russian_tracks=()
-  local -a SUBTITLE_SELECTION_MAP_ARGS=()
-  local SUBTITLE_INTERNAL_COUNT=0
   local has_eng_or_ita=0
   local has_non_russian=0
-  local sub_idx=0
-  local -a sub_inputs=() sub_langs=() sub_forced=() sub_files=()
-  local rel="${src#$SCAN_DIR/}"
+  local -a sub_inputs=() sub_files=()
+  local rel="${src#"$SCAN_DIR"/}"
   local srcdir; srcdir="$(dirname "$rel")"
   local filename; filename="$(basename "$rel")"
   local base="${filename%.*}"
@@ -57,7 +53,7 @@ process_one() {
   acodec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
            -of default=nw=1:nk=1 "$src" < /dev/null 2>/dev/null || echo "none")
   
-  local height=$(ffprobe -v error -select_streams v:0 \
+  local height; height=$(ffprobe -v error -select_streams v:0 \
     -show_entries stream=height -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "?")
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
@@ -100,6 +96,7 @@ process_one() {
     echo "Selection Plan:"
     if [[ -n "$plan_lines" ]]; then
        # Plan format: source|id|lang|forced|codec|default
+       # shellcheck disable=SC2001
        echo "$plan_lines" | sed 's/^/  /'
     else
        echo "  (No subtitles selected)"
@@ -275,14 +272,14 @@ process_one() {
   fi
 
   # TRANSCODE
-  local hw=$(detect_hw_accel)
+  local hw; hw=$(detect_hw_accel)
   local -a encode_args=()
-  local optimal_crf=$(get_optimal_crf "$src")
+  local optimal_crf; optimal_crf=$(get_optimal_crf "$src")
   local use_crf="${CRF:-$optimal_crf}"
   
   case "$hw" in
     nvenc)
-      if [[ "$CODEC" == "hevc" ]]; then
+      if [[ "${CODEC:-}" == "hevc" ]]; then
         encode_args=(-c:v hevc_nvenc -preset p4 -cq "$use_crf" -b:v 0 -spatial_aq 1 -temporal_aq 1)
         echo "→ Using NVIDIA NVENC (HEVC)"
       else
@@ -300,7 +297,7 @@ process_one() {
       fi
       ;;
     vaapi)
-      if [[ "$CODEC" == "hevc" ]]; then
+      if [[ "${CODEC:-}" == "hevc" ]]; then
         encode_args=(-vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -qp "$use_crf")
         echo "→ Using VA-API (HEVC)"
       else
@@ -321,7 +318,7 @@ process_one() {
 
   # Audio encoding strategy
   local max_channels=2
-  local best_acodec="unknown"
+  # local best_acodec="unknown"
 
   # Scan all selected audio tracks to find max channels
   if [[ ${#audio_map_args[@]} -gt 0 ]]; then
@@ -333,8 +330,10 @@ process_one() {
       # Support both old relative "a:0" and new absolute "1" indices
       local spec="0:$idx"
 
-      local ch=$(ffprobe -v error -select_streams "$spec" -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
-      local codec=$(ffprobe -v error -select_streams "$spec" -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
+      local ch
+      ch=$(ffprobe -v error -select_streams "$spec" -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
+      local codec
+      codec=$(ffprobe -v error -select_streams "$spec" -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
       
       # Sanitize channel count
       [[ -z "$ch" || ! "$ch" =~ ^[0-9]+$ ]] && ch=2
@@ -344,13 +343,13 @@ process_one() {
 
       if [[ "$ch" -gt "$max_channels" ]]; then
         max_channels="$ch"
-        best_acodec="$codec"
+        # best_acodec="$codec"
       fi
     done
   fi
 
   local channels="$max_channels"
-  local selected_acodec="$best_acodec"
+  # local selected_acodec="$best_acodec"
 
   local -a audio_encode_args=()
   # Always downmix to stereo as requested

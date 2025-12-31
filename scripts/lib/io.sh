@@ -96,7 +96,8 @@ select_folder() {
   SCAN_DIR=$(cd "$input_path" && pwd)
 
   local video_count=0
-  local -a formats=(${VIDEO_FORMATS//|/ })
+  local -a formats
+  IFS='|' read -ra formats <<< "$VIDEO_FORMATS"
   for fmt in "${formats[@]}"; do
     video_count=$((video_count + $(find "$SCAN_DIR" -type f -iname "*.${fmt}" 2>/dev/null | wc -l)))
   done

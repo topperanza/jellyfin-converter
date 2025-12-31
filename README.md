@@ -53,9 +53,18 @@ The converter implements a smart subtitle selection strategy:
   ./run.sh --print-subtitles /path/to/video.mkv
   ```
 
-## Development & CI
-- **CI**: GitHub Actions workflow checks Bash syntax, runs ShellCheck, and executes the full test suite on every push.
+## CI & Linting
+- **CI**: Uses `shellcheck-py` (pip-installed ShellCheck) for linting.
+- **No Homebrew**: Homebrew is intentionally NOT used to avoid large dependency chains on older macOS (e.g. Catalina).
 - **Tests**: Run `./tests/run.sh` locally to execute the test harness.
+
+### Local Development Setup
+```bash
+python3 -m venv .venv
+. .venv/bin/activate
+pip install shellcheck-py
+shellcheck --version
+```
 
 ## Reporting bugs
 Open an issue on GitHub with:

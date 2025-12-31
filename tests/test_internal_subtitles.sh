@@ -46,36 +46,30 @@ cat >"$STUB_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
 src="${!#}"
 
-if echo "$*" | grep -q -- "-select_streams s"; then
-  if echo "$src" | grep -q "withsubs.mkv"; then
-    echo "0,subrip,eng,English SDH,0,0"
-    echo "1,hdmv_pgs_subtitle,rus,Main Forced,0,1"
-    echo "2,subrip,rus,Regular,0,0"
-    exit 0
-  fi
-
-  if [[ -f "${src}.subs" ]]; then
-    while IFS= read -r mapped; do
-      case "$mapped" in
-        0:s:0) echo "0,subrip,eng,English SDH,0,0" ;;
-        0:s:1) echo "1,hdmv_pgs_subtitle,rus,Main Forced,0,1" ;;
-        0:s:2) echo "2,subrip,rus,Regular,0,0" ;;
-        1:s:0) echo "3,subrip,eng,External,0,0" ;;
-      esac
-    done <"${src}.subs"
-    exit 0
-  fi
-fi
-
-case "$*" in
+  case "$*" in
   *-select_streams\ v:0\ -show_entries\ stream=codec_name*)
     echo "h264"
     ;;
-  *-select_streams\ a:0\ -show_entries\ stream=codec_name*)
+  *-select_streams*show_entries*stream=codec_name*)
     echo "aac"
     ;;
-  *-select_streams\ a\ -show_entries\ stream=index:stream_tags=language,title*)
-    echo "0,eng,Main"
+  *-select_streams*a*show_entries*stream=index*)
+    echo "1"
+    ;;
+  *-select_streams*0:0*show_entries*stream=tags:language*)
+    echo "eng"
+    ;;
+  *-select_streams*0:0*show_entries*stream=tags:title*)
+    echo "Main"
+    ;;
+  *-select_streams*s*show_entries*stream=index,codec_name:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired*)
+    echo "2|subrip|eng|English SDH|0|0|1"
+    echo "3|hdmv_pgs_subtitle|rus|Main Forced|0|1|0"
+    echo "4|subrip|rus|Regular|0|0|0"
+    ;;
+  *-select_streams*s*show_entries*stream=index:stream_tags=language,title:stream_disposition=forced*)
+    echo "2|eng|Subtitle (eng)|0"
+    echo "3|rus|Subtitle (rus)|1"
     ;;
   *-select_streams\ v:0\ -show_entries\ stream=height*)
     echo "2160"
@@ -107,24 +101,53 @@ EOF
 
 chmod +x "$STUB_BIN/"*
 
-PATH="$STUB_BIN:$PATH" \
-DRY_RUN=0 \
-DELETE=0 \
-SKIP_DELETE_CONFIRM=1 \
-LOG_DIR="$TMP_ROOT/logs" \
-OUTROOT="$OUTROOT" \
-PROFILE="jellyfin-1080p" \
-"$ROOT/run.sh" "$WORKDIR" >"$RUN_OUTPUT"
+test_internal_logic() {
+  PATH="$STUB_BIN:$PATH" \
+  DRY_RUN=0 \
+  DELETE=0 \
+  SKIP_DELETE_CONFIRM=1 \
+  LOG_DIR="$TMP_ROOT/logs" \
+  OUTROOT="$OUTROOT" \
+  PROFILE="jellyfin-1080p" \
+  "$ROOT/run.sh" "$WORKDIR" >"$RUN_OUTPUT"
 
-[[ -f "$OUTROOT/withsubs.mkv" ]]
+  if [[ ! -f "$OUTROOT/withsubs.mkv" ]]; then
+    echo "FAIL: Output file not created"
+    return 1
+  fi
 
-withsubs_cmd="$(grep "withsubs.mkv" "$FFMPEG_CALLS" | head -n 1)"
-[[ "$withsubs_cmd" == *"-map 0:s:0"* ]]
-[[ "$withsubs_cmd" == *"-map 0:s:1"* ]]
-[[ "$withsubs_cmd" != *"-map 0:s:2"* ]]
+  local withsubs_cmd
+  withsubs_cmd="$(grep "withsubs.mkv" "$FFMPEG_CALLS" | head -n 1)"
+  echo "DEBUG: withsubs_cmd='$withsubs_cmd'"
+  
+  if [[ "$withsubs_cmd" != *"-map 0:2"* ]]; then
+    echo "FAIL: map 0:2 (Eng SDH) missing"
+    echo "--- RUN OUTPUT ---"
+    cat "$RUN_OUTPUT"
+    echo "------------------"
+    return 1
+  fi
+  if [[ "$withsubs_cmd" != *"-map 0:3"* ]]; then
+    echo "FAIL: map 0:3 (Rus Forced) missing"
+    return 1
+  fi
+  if [[ "$withsubs_cmd" == *"-map 0:4"* ]]; then
+    echo "FAIL: map 0:4 (Rus Regular) present"
+    return 1
+  fi
 
-output_subs="$("$STUB_BIN/ffprobe" -v error -select_streams s -show_entries stream=index:stream_tags=language,title:stream_disposition=forced -of csv=p=0 "$OUTROOT/withsubs.mkv")"
-[[ "$(echo "$output_subs" | wc -l)" -eq 2 ]]
-echo "$output_subs" | grep -q "eng,English SDH"
-echo "$output_subs" | grep -q "Main Forced"
-! echo "$output_subs" | grep -q "Regular"
+  local output_subs
+  output_subs="$("$STUB_BIN/ffprobe" -v error -select_streams s -show_entries stream=index:stream_tags=language,title:stream_disposition=forced -of csv=p=0 "$OUTROOT/withsubs.mkv")"
+  echo "DEBUG: output_subs='$output_subs'"
+  
+  if [[ "$(echo "$output_subs" | wc -l)" -ne 2 ]]; then
+    echo "FAIL: Expected 2 output subs, got $(echo "$output_subs" | wc -l)"
+    return 1
+  fi
+  echo "$output_subs" | grep -q "Subtitle (eng)" || { echo "FAIL: Output missing Eng SDH (Subtitle (eng))"; return 1; }
+  echo "$output_subs" | grep -q "Subtitle (rus)" || { echo "FAIL: Output missing Main Forced (Subtitle (rus))"; return 1; }
+  echo "$output_subs" | grep -q "Regular" && { echo "FAIL: Output has Regular"; return 1; }
+  
+  return 0
+}
+
