@@ -11,7 +11,6 @@ setup() {
   source "scripts/lib/media_filters.sh"
   export FFPROBE_OUTPUT=""
   export PREFER_SDH=0
-  export INCLUDE_COMMENTARY=1
   export MARK_NORMAL_SUB_DEFAULT=0
 }
 

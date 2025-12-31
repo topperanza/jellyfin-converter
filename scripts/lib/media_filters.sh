@@ -449,7 +449,6 @@ discover_external_subs() {
   local fname; fname="$(basename "$video")"
   local base="${fname%.*}"
   local prefer_sdh="${PREFER_SDH:-0}"
-  local include_commentary="${INCLUDE_COMMENTARY:-1}"
 
   local old_nullglob
   shopt -q nullglob && old_nullglob=1 || old_nullglob=0
