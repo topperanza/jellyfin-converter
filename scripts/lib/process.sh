@@ -3,21 +3,17 @@
 
 process_one() {
   local src="$1"
-  local src_full_dir; src_full_dir="$(dirname "$src")"
+  # shellcheck disable=SC2034
   local -a sub_inputs=()
-  local -a sub_langs=()
-  local -a sub_forced=()
   local -a sub_files=()
   local -a subtitle_map_args=()
   local -a audio_map_args=()
+  # shellcheck disable=SC2034
   local -a russian_tracks=()
-  local -a SUBTITLE_SELECTION_MAP_ARGS=()
-  local SUBTITLE_INTERNAL_COUNT=0
   local has_eng_or_ita=0
   local has_non_russian=0
-  local sub_idx=0
-  local -a sub_inputs=() sub_langs=() sub_forced=() sub_files=()
-  local rel="${src#$SCAN_DIR/}"
+  local -a sub_inputs=() sub_files=()
+  local rel="${src#"$SCAN_DIR"/}"
   local srcdir; srcdir="$(dirname "$rel")"
   local filename; filename="$(basename "$rel")"
   local base="${filename%.*}"
@@ -57,7 +53,7 @@ process_one() {
   acodec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
            -of default=nw=1:nk=1 "$src" < /dev/null 2>/dev/null || echo "none")
   
-  local height=$(ffprobe -v error -select_streams v:0 \
+  local height; height=$(ffprobe -v error -select_streams v:0 \
     -show_entries stream=height -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "?")
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
@@ -81,64 +77,74 @@ process_one() {
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
   finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
 
-  # 3. Get list of subtitle streams (index,codec,disposition)
-  local subtitle_indices_csv
-  subtitle_indices_csv=$(ffprobe -v error -select_streams s \
-    -show_entries stream=index,codec_name,disposition:default,forced \
-    -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
-    
-  # 4. Build subtitle info manually (reliable)
-  local subtitle_info=""
-  if [[ -n "$subtitle_indices_csv" ]]; then
-    while IFS=, read -r idx codec def forced; do
-      local lang title
-      lang=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:language -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "und")
-      title=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
-      # Construct CSV line: index,codec,lang,title,default,forced
-      subtitle_info+="${idx},${codec},${lang:-und},${title},${def},${forced}"$'\n'
-    done <<< "$subtitle_indices_csv"
+  # Subtitle Selection (Phase 3: Unified Plan)
+  local plan_lines
+  plan_lines="$(build_subtitle_plan "$src")"
+
+  # Debug: Print Subtitles if requested
+  if [[ "${PRINT_SUBTITLES:-0}" -eq 1 ]]; then
+    echo "========================================"
+    echo "DEBUG: Subtitle Inventory & Plan"
+    echo "Source: $src"
+    echo "----------------------------------------"
+    echo "Internal Subtitles (Raw Probe):"
+    probe_internal_subs "$src" | sed 's/^/  /'
+    echo "----------------------------------------"
+    echo "External Subtitles (Discovered):"
+    discover_external_subs "$src" | sed 's/^/  /'
+    echo "----------------------------------------"
+    echo "Selection Plan:"
+    if [[ -n "$plan_lines" ]]; then
+       # Plan format: source|id|lang|forced|codec|default
+       # shellcheck disable=SC2001
+       echo "$plan_lines" | sed 's/^/  /'
+    else
+       echo "  (No subtitles selected)"
+    fi
+    echo "========================================"
   fi
-
-  local internal_sub_count=0
-  # Select internal subtitles to keep (populates SUBTITLE_SELECTION_MAP_ARGS)
-  select_internal_subtitles "$subtitle_info"
-
-  if [[ ${#SUBTITLE_SELECTION_MAP_ARGS[@]} -gt 0 ]]; then
-    subtitle_map_args=("${SUBTITLE_SELECTION_MAP_ARGS[@]}")
-  fi
-  internal_sub_count="$SUBTITLE_INTERNAL_COUNT"
-
-  # Subtitle discovery (check all supported extensions)
-  local old_nullglob
-  shopt -q nullglob && old_nullglob=1 || old_nullglob=0
-  shopt -s nullglob
-
-  for ext in srt ass sub; do
-    # Match any file starting with the base name (e.g. "Movie.avi" -> "Movie*.srt")
-    for s in "$src_full_dir/$base"*"$ext"; do
-      [[ -f "$s" ]] && collect_subtitle "$s" "$base" sub_inputs sub_langs sub_forced sub_files sub_idx
-    done
-  done
-
-  [[ "$old_nullglob" -eq 0 ]] && shopt -u nullglob
-
-  # Build mapping args
-  if (( sub_idx > 0 )); then
-    for ((i=1; i<=sub_idx; i++)); do
-      subtitle_map_args+=("-map" "$i:s:0")
-      local lang="${sub_langs[$((i-1))]}"
-      [[ -z "$lang" ]] && lang="unknown"
-      local sub_file="${sub_files[$((i-1))]}"
-      local codec_label; codec_label="$(basename "$sub_file")"
-      codec_label="${codec_label##*.}"
-      codec_label="$(to_lower "$codec_label")"
-      [[ "$codec_label" == "srt" ]] && codec_label="subrip"
-      [[ -z "$codec_label" ]] && codec_label="unknown"
-      echo "  → Keeping subtitle track $i: $lang ($codec_label)"
-    done
-  fi
-
-  if [[ "${#subtitle_map_args[@]}" -eq 0 ]]; then
+  
+  local output_sub_idx=0
+  local ext_input_idx=1  # 0 is video
+  local -a meta_args=()
+  
+  if [[ -n "$plan_lines" ]]; then
+    while IFS='|' read -r source id lang forced codec is_default; do
+      [[ -z "$source" ]] && continue
+      
+      local is_forced=0; [[ "$forced" -eq 1 ]] && is_forced=1
+      local is_def=0; [[ "$is_default" -eq 1 ]] && is_def=1
+      local display_lang="${lang:-und}"
+      
+      if [[ "$source" == "int" ]]; then
+        # Internal: id is stream index
+        subtitle_map_args+=("-map" "0:$id")
+        echo "  → Keeping internal subtitle $id: $display_lang ($codec) [forced=$is_forced default=$is_def]"
+        
+      elif [[ "$source" == "ext" ]]; then
+        # External: id is file path
+        sub_inputs+=("-i" "$id")
+        sub_files+=("$id")
+        subtitle_map_args+=("-map" "${ext_input_idx}:s:0")
+        echo "  → Keeping external subtitle: $(basename "$id") [$display_lang] ($codec) [forced=$is_forced default=$is_def]"
+        ((ext_input_idx+=1))
+      fi
+      
+      # Metadata for output stream
+      # We apply metadata to the corresponding output stream index
+      meta_args+=("-metadata:s:s:$output_sub_idx" "language=$display_lang")
+      meta_args+=("-metadata:s:s:$output_sub_idx" "title=Subtitle ($display_lang)")
+      if [[ "$is_def" -eq 1 ]]; then
+        meta_args+=("-disposition:s:$output_sub_idx" "default")
+      elif [[ "$is_forced" -eq 1 ]]; then
+        meta_args+=("-disposition:s:$output_sub_idx" "forced")
+      else
+        meta_args+=("-disposition:s:$output_sub_idx" "0")
+      fi
+      
+      ((output_sub_idx+=1))
+    done <<< "$plan_lines"
+  else
     echo "  → No subtitles selected"
   fi
 
@@ -148,19 +154,6 @@ process_one() {
   fi
   if [[ ${#subtitle_map_args[@]} -gt 0 ]]; then
     map_args+=("${subtitle_map_args[@]}")
-  fi
-
-  # Build metadata args for subtitles
-  local -a meta_args=()
-  if (( sub_idx > 0 )); then
-    for ((i=0; i<sub_idx; i++)); do
-      local lang="${sub_langs[$i]}" forced="${sub_forced[$i]}"
-      [[ -z "$forced" ]] && forced=0
-      local sub_meta_index=$((internal_sub_count + i))
-      [[ -n "$lang" ]] && meta_args+=("-metadata:s:s:${sub_meta_index}" "language=$lang")
-      [[ -n "$lang" ]] && meta_args+=("-metadata:s:s:${sub_meta_index}" "title=Subtitle ($lang)")
-      [[ "$forced" -eq 1 ]] && meta_args+=("-disposition:s:${sub_meta_index}" "forced")
-    done
   fi
 
   # Container metadata
@@ -279,14 +272,14 @@ process_one() {
   fi
 
   # TRANSCODE
-  local hw=$(detect_hw_accel)
+  local hw; hw=$(detect_hw_accel)
   local -a encode_args=()
-  local optimal_crf=$(get_optimal_crf "$src")
+  local optimal_crf; optimal_crf=$(get_optimal_crf "$src")
   local use_crf="${CRF:-$optimal_crf}"
   
   case "$hw" in
     nvenc)
-      if [[ "$CODEC" == "hevc" ]]; then
+      if [[ "${CODEC:-}" == "hevc" ]]; then
         encode_args=(-c:v hevc_nvenc -preset p4 -cq "$use_crf" -b:v 0 -spatial_aq 1 -temporal_aq 1)
         echo "→ Using NVIDIA NVENC (HEVC)"
       else
@@ -304,7 +297,7 @@ process_one() {
       fi
       ;;
     vaapi)
-      if [[ "$CODEC" == "hevc" ]]; then
+      if [[ "${CODEC:-}" == "hevc" ]]; then
         encode_args=(-vaapi_device /dev/dri/renderD128 -c:v hevc_vaapi -qp "$use_crf")
         echo "→ Using VA-API (HEVC)"
       else
@@ -325,7 +318,7 @@ process_one() {
 
   # Audio encoding strategy
   local max_channels=2
-  local best_acodec="unknown"
+  # local best_acodec="unknown"
 
   # Scan all selected audio tracks to find max channels
   if [[ ${#audio_map_args[@]} -gt 0 ]]; then
@@ -337,8 +330,10 @@ process_one() {
       # Support both old relative "a:0" and new absolute "1" indices
       local spec="0:$idx"
 
-      local ch=$(ffprobe -v error -select_streams "$spec" -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
-      local codec=$(ffprobe -v error -select_streams "$spec" -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
+      local ch
+      ch=$(ffprobe -v error -select_streams "$spec" -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
+      local codec
+      codec=$(ffprobe -v error -select_streams "$spec" -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
       
       # Sanitize channel count
       [[ -z "$ch" || ! "$ch" =~ ^[0-9]+$ ]] && ch=2
@@ -348,13 +343,13 @@ process_one() {
 
       if [[ "$ch" -gt "$max_channels" ]]; then
         max_channels="$ch"
-        best_acodec="$codec"
+        # best_acodec="$codec"
       fi
     done
   fi
 
   local channels="$max_channels"
-  local selected_acodec="$best_acodec"
+  # local selected_acodec="$best_acodec"
 
   local -a audio_encode_args=()
   # Always downmix to stereo as requested

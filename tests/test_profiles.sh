@@ -98,7 +98,12 @@ OUTROOT="$TMP_ROOT/out-default" \
 grep -q "Profile: jellyfin-1080p (default)" "$TMP_ROOT/run-default.log"
 grep -q "Transcoding due to bitrate threshold" "$TMP_ROOT/run-default.log"
 grep -q "FFMPEG " "$CALL_LOG"
-! grep -q " -c copy" "$CALL_LOG"
+
+# Verify we did NOT copy video stream (should be transcode)
+if grep -q " -c copy" "$CALL_LOG"; then
+  echo "FAIL: Video stream was copied, expected transcode"
+  exit 1
+fi
 
 # Archive profile should allow remux
 CALL_LOG="$TMP_ROOT/ffmpeg_calls_archive"

@@ -2,7 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TMP_BIN="$(mktemp -d)"
+# Use a temp directory inside the project to satisfy safe_rm constraints
+TMP_BIN="$ROOT/tests/tmp/test_modules_$(date +%s)"
+mkdir -p "$TMP_BIN"
 
 cleanup() {
   rm -rf "$TMP_BIN"
@@ -14,6 +16,7 @@ VIDEO_FORMATS="mp4|mkv|avi"
 source "$ROOT/scripts/lib/media_filters.sh"
 source "$ROOT/scripts/lib/ffmpeg.sh"
 source "$ROOT/scripts/lib/io.sh"
+source "$ROOT/scripts/lib/compat.sh"
 
 cat >"$TMP_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
@@ -38,12 +41,12 @@ has_eng_or_ita=0
 has_non_russian=0
 build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
 finalize_audio_selection audio_map_args russian_tracks "$has_eng_or_ita" "$has_non_russian"
-[[ "${audio_map_args[*]}" == *"0:a:0"* ]]
-[[ "${audio_map_args[*]}" == *"0:a:2"* ]]
+[[ "${audio_map_args[*]}" == *"0:0"* ]]
+[[ "${audio_map_args[*]}" == *"0:2"* ]]
 [[ "${#russian_tracks[@]}" -eq 1 ]]
 [[ "$has_eng_or_ita" -eq 1 ]]
 
-declare -a sub_inputs sub_langs sub_forced sub_files
+declare -a sub_inputs sub_langs sub_forced
 sub_idx=0
 collect_subtitle "/tmp/sample.base.en.srt" "sample.base" sub_inputs sub_langs sub_forced sub_files sub_idx
 collect_subtitle "/tmp/sample.base.commentary.srt" "sample.base" sub_inputs sub_langs sub_forced sub_files sub_idx
@@ -54,9 +57,9 @@ collect_subtitle "/tmp/sample.base.commentary.srt" "sample.base" sub_inputs sub_
 subtitle_info=$'0,subrip,eng,English,0,0\n1,subrip,rus,,0,0\n2,subrip,rus,,0,1'
 select_internal_subtitles "$subtitle_info"
 [[ "$SUBTITLE_INTERNAL_COUNT" -eq 2 ]]
-[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:s:0"* ]]
-[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:s:2"* ]]
-[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" != *"0:s:1"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:0"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:2"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" != *"0:1"* ]]
 
 [[ "$(get_optimal_crf "$TMP_BIN/file.uhd")" == "22" ]]
 [[ "$(get_optimal_crf "$TMP_BIN/file.hd")" == "20" ]]

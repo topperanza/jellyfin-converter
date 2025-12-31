@@ -133,7 +133,8 @@ preflight_hw_encoder() {
 # Determine optimal CRF based on source resolution
 get_optimal_crf() {
   local src="$1"
-  local height=$(ffprobe -v error -select_streams v:0 \
+  local height
+  height=$(ffprobe -v error -select_streams v:0 \
     -show_entries stream=height -of csv=p=0 "$src" 2>/dev/null || echo "720")
 
   if [[ "$height" -ge 2160 ]]; then

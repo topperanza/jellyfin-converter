@@ -1,0 +1,52 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Show Bash version
+        run: bash --version
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install ShellCheck
+        run: |
+          python -m pip install -U pip
+          python -m pip install shellcheck-py
+
+      - name: Verify ShellCheck
+        run: shellcheck --version
+
+      - name: Bash Syntax Check
+        run: |
+          find . -type f -name "*.sh" -print0 | xargs -0 bash -n
+
+      - name: Run ShellCheck
+        run: |
+          find . -type f -name "*.sh" \
+            -not -path "./.git/*" \
+            -not -path "./.venv/*" \
+            -print0 | xargs -0 shellcheck -x
+
+      - name: Run Tests
+        run: |
+          if [ -x "./tests/run.sh" ]; then
+            ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
+          elif [ -f "./tests/run.sh" ]; then
+            bash ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
+          else
+            echo "No test runner found."
+          fi
