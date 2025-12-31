@@ -37,7 +37,7 @@ echo "$out" | grep -q "^1|hdmv_pgs_subtitle|rus|Main Forced|0|1"
 
 select_internal_subtitles "$out"
 [[ "$SUBTITLE_INTERNAL_COUNT" -eq 2 ]]
-[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:s:0"* ]]
-[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:s:1"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:0"* ]]
+[[ "${SUBTITLE_SELECTION_MAP_ARGS[*]}" == *"0:1"* ]]
 
 echo "OK"
