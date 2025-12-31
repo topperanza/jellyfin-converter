@@ -28,6 +28,7 @@ chmod +x "$STUB_BIN/ffprobe"
 PATH="$STUB_BIN:$PATH"
 
 source "$ROOT/scripts/lib/media_filters.sh"
+source "$ROOT/scripts/lib/compat.sh"
 
 out="$(probe_internal_subs "$INPUT")"
 [[ "$(echo "$out" | wc -l)" -eq 2 ]]

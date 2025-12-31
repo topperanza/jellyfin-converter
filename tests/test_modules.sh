@@ -16,6 +16,7 @@ VIDEO_FORMATS="mp4|mkv|avi"
 source "$ROOT/scripts/lib/media_filters.sh"
 source "$ROOT/scripts/lib/ffmpeg.sh"
 source "$ROOT/scripts/lib/io.sh"
+source "$ROOT/scripts/lib/compat.sh"
 
 cat >"$TMP_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
