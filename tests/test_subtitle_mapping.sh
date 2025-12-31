@@ -34,9 +34,9 @@ src="${!#}"
 
 if echo "$*" | grep -q -- "-select_streams s"; then
   if echo "$src" | grep -q "withsubs"; then
-    echo "0,subrip,eng,English SDH,0,0"
-    echo "1,subrip,und,Director Commentary,0,0"
-    echo "2,subrip,rus,Russian Track,0,0"
+    echo "0|subrip|eng|English SDH|0|0"
+    echo "1|subrip|und|Director Commentary|0|0"
+    echo "2|subrip|rus|Russian Track|0|0"
   fi
   exit 0
 fi
@@ -82,8 +82,13 @@ OUTROOT="$OUTROOT" \
 withsubs_cmd="$(grep "withsubs.mkv" "$FFMPEG_CALLS" | head -n 1)"
 nosubs_cmd="$(grep "nosubs" "$FFMPEG_CALLS" | head -n 1)"
 
-[[ "$withsubs_cmd" == *"-map 0:s:0"* ]]
-[[ "$withsubs_cmd" == *"-map 0:s:1"* ]]
-[[ "$withsubs_cmd" == *"-map 1:s:0"* ]]
-[[ "$withsubs_cmd" != *"-map 0:s:2"* ]]
+# Phase 3 Logic:
+# - External Eng (1:s:0) wins over Internal Eng SDH (0:0).
+# - Internal Commentary (0:1) is kept.
+# - Internal Rus (0:2) is dropped (not forced).
+
+if [[ "$withsubs_cmd" != *"-map 1:s:0"* ]]; then echo "FAIL: Missing Ext Eng (-map 1:s:0)"; echo "CMD: $withsubs_cmd"; exit 1; fi
+if [[ "$withsubs_cmd" != *"-map 0:1"* ]]; then echo "FAIL: Missing Int Comm (-map 0:1)"; echo "CMD: $withsubs_cmd"; exit 1; fi
+if [[ "$withsubs_cmd" == *"-map 0:0"* ]]; then echo "FAIL: Present Int Eng SDH (-map 0:0)"; echo "CMD: $withsubs_cmd"; exit 1; fi
+if [[ "$withsubs_cmd" == *"-map 0:2"* ]]; then echo "FAIL: Present Int Rus (-map 0:2)"; echo "CMD: $withsubs_cmd"; exit 1; fi
 [[ "$nosubs_cmd" != *":s:"* ]]

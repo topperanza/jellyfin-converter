@@ -2,7 +2,9 @@
 set -euo pipefail
 
 ROOT="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-TMP_BIN="$(mktemp -d)"
+# Use a temp directory inside the project to satisfy safe_rm constraints
+TMP_BIN="$ROOT/tests/tmp/test_modules_$(date +%s)"
+mkdir -p "$TMP_BIN"
 
 cleanup() {
   rm -rf "$TMP_BIN"
