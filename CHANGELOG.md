@@ -1,5 +1,12 @@
 # Changelog
 
+## v1.0.0
+- Deterministic subtitle selection
+- Strict subtitle sidecar anchoring (safety fix)
+- Forced/default propagation
+- CI with shellcheck-py (no Homebrew)
+- Bash 3.2 compatibility guaranteed
+
 ## 0.2.0-alpha
 - Added `run.sh` entrypoint with dry-run default.
 - Harder dependency checks and clearer usage/help output.
