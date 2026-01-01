@@ -478,9 +478,10 @@ discover_external_subs() {
     fi
     lang=""; forced=0; sdh=0; commentary=0
     local lower="$rest"; lower="$(to_lower "$lower")"
+    local -a __tokens=()
     IFS='._- ()[]' read -r -a __tokens <<< "$rest"
     local tk
-    for tk in "${__tokens[@]}"; do
+    for tk in "${__tokens[@]-}"; do
       [[ -z "$tk" ]] && continue
       [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
       case "$(to_lower "$tk")" in
@@ -490,6 +491,14 @@ discover_external_subs() {
       esac
     done
     [[ -z "$lang" ]] && lang="und"
+
+    # Safety: If suffix exists but contains no recognized tags, treat as false positive (e.g. "Movie - Sequel.srt")
+    if [[ -n "$rest" ]]; then
+      if [[ "$lang" == "und" && "$forced" -eq 0 && "$sdh" -eq 0 && "$commentary" -eq 0 ]]; then
+        continue
+      fi
+    fi
+
     candidates+="${f}|${lang}|${forced}|${sdh}|${commentary}|${ext}"$'\n'
   done
 

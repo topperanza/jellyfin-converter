@@ -36,3 +36,10 @@ tests/tmp/
 /dummy.mkv
 /-encoders
 /-encoders.subs
+
+# --------------------------------------------------
+# CI/Log files
+# --------------------------------------------------
+ci_log.txt
+log.txt
+pr_body.md

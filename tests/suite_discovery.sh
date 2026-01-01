@@ -57,3 +57,20 @@ test_discovery_case3_complex_tokens() {
   assert_contains "$output" "film.eng (forced).srt|eng|1|0|0|srt"
   assert_contains "$output" "film.ita.[default].srt|ita|0|0|0|srt"
 }
+
+test_discovery_strict_anchoring() {
+  local video="tests/fixtures/discovery/strict_anchoring/Movie.mkv"
+  local output
+  output="$(discover_external_subs "$video")"
+  
+  # Expected:
+  # Movie.eng.srt -> eng|0|0|0|srt
+  # Movie.srt -> und|0|0|0|srt (exact match, no suffix -> kept)
+  # Movie - Sequel.srt -> IGNORED (ambiguous suffix without tags)
+
+  assert_contains "$output" "Movie.eng.srt|eng|0|0|0|srt"
+  assert_contains "$output" "Movie.srt|und|0|0|0|srt"
+  
+  # Ensure the sequel is NOT in the output
+  assert_not_contains "$output" "Sequel"
+}

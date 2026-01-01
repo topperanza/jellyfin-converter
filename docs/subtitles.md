@@ -7,11 +7,13 @@ The converter automatically discovers external subtitle files located in the sam
 
 ### Strict Matching Rules
 1.  **Exact Stem Match**: The subtitle filename must start exactly with the video filename (minus extension).
-    - Video: `MyMovie.mkv`
-    - Match: `MyMovie.eng.srt`
-    - No Match: `MyMovie_Sequel.srt`
-2.  **Allowed Separators**: The character immediately following the video stem must be a standard separator (`.`, `_`, `-`, space) or part of a language/tag.
+2.  **Required Tags in Suffix**: If the subtitle file has a suffix (characters between the stem and extension), that suffix **MUST** contain at least one recognized tag (e.g., language like `eng`, `ita`, or flag like `forced`, `sdh`, `default`).
+    - Video: `Movie.mkv`
+    - Match: `Movie.eng.srt`
+    - Match: `Movie.srt` (Exact match without suffix)
+    - No Match: `Movie - Sequel.srt` (Suffix " - Sequel" contains no recognized tags)
 3.  **Ambiguity Protection**: Files that look like they belong to another video (e.g., different year or part number appended without a clear separator) are skipped.
+4.  **Why this is safer**: This prevents false positives where a similarly named file (like a sequel or extra) is mistakenly treated as a subtitle for the main video. It ensures that any deviation from the exact filename is intentional and descriptive.
 
 ### Tag Parsing
 Tags are detected from the filename suffix:
