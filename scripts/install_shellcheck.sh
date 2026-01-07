@@ -30,9 +30,20 @@ ok=0
 if [[ -n "${VIRTUAL_ENV:-}" ]]; then
   "$PY" -m pip install -U pip >/dev/null 2>&1 || true
   if "$PY" -m pip install shellcheck-py; then ok=1; fi
-  if [[ "$ok" -eq 1 ]] && exists shellcheck; then
-    shellcheck --version
-    exit 0
+  if [[ "$ok" -eq 1 ]]; then
+    SC_PATH="$("$PY" - <<'PY'
+import sys, os
+print(os.path.join(sys.prefix, "bin", "shellcheck"))
+PY
+)"
+    if [[ -x "$SC_PATH" ]]; then
+      "$SC_PATH" --version
+      exit 0
+    fi
+    if exists shellcheck; then
+      shellcheck --version
+      exit 0
+    fi
   fi
 fi
 if [[ "$ok" -eq 0 ]]; then
@@ -46,6 +57,15 @@ if [[ "$ok" -eq 0 ]]; then
     if "$VPY" -m pip install shellcheck-py; then ok=1; fi
     if [[ -n "${GITHUB_PATH:-}" ]]; then
       printf "%s\n" "$VENV_DIR/bin" >>"$GITHUB_PATH" || true
+    fi
+    SC_VENV_PATH="$("$VPY" - <<'PY'
+import sys, os
+print(os.path.join(sys.prefix, "bin", "shellcheck"))
+PY
+)"
+    if [[ -x "$SC_VENV_PATH" ]]; then
+      "$SC_VENV_PATH" --version
+      exit 0
     fi
   fi
 fi
