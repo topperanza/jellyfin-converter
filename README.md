@@ -66,6 +66,13 @@ pip install shellcheck-py
 shellcheck --version
 ```
 
+### ShellCheck (no Homebrew)
+- Installer: `./scripts/install_shellcheck.sh` prefers an active Python venv, otherwise creates `.venv-shellcheck` locally and installs `shellcheck-py`.
+- Mirrors: set `PIP_INDEX_URL` (optionally `PIP_EXTRA_INDEX_URL`) to your mirror. Use URLs ending with `/simple`.
+- Proxies: set `HTTP_PROXY` / `HTTPS_PROXY` if required.
+- Verification: `shellcheck --version` after running the installer.
+- CI: secrets `PIP_INDEX_URL` and `PIP_EXTRA_INDEX_URL` are passed to the installer; no mirror URLs are committed to the repo.
+
 ## Reporting bugs
 Open an issue on GitHub with:
 - macOS version
