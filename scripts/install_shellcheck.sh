@@ -21,6 +21,8 @@ else
 fi
 if [[ -n "${SHELLCHECK_INSTALL_SIMULATE_FAIL:-}" ]]; then
   echo "pip config debug"
+  echo "PIP_INDEX_URL=${PIP_INDEX_URL:-unset}"
+  echo "PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL:-unset}"
   echo "Hint: set PIP_INDEX_URL ending with /simple"
   echo "Hint: set HTTP_PROXY/HTTPS_PROXY"
   echo "Re-run with pip -vvv"
