@@ -27,6 +27,16 @@ map_lang() {
   esac
 }
 
+# Normalize language code: empty/missing/und/unknown -> und
+normalize_lang() {
+  local l="$1"
+  if [[ -z "$l" || "$l" == "und" || "$l" == "unknown" ]]; then
+    echo "und"
+  else
+    echo "$l"
+  fi
+}
+
 is_wanted_lang() {
   local lang="$1"
   local target="${SUB_LANGS:-eng,ita}"
@@ -356,6 +366,7 @@ select_internal_subtitles() {
       IFS="$__sep__" read -r sub_stream_idx sub_codec sub_lang sub_title sub_default sub_forced sub_hi <<< "$__line__"
       [[ -z "$sub_stream_idx" || ! "$sub_stream_idx" =~ ^[0-9]+$ ]] && continue
       local mapped_lang; mapped_lang="$(map_lang "$sub_lang")"
+      [[ -z "$mapped_lang" ]] && mapped_lang="$(normalize_lang "$sub_lang")"
       local is_commentary=0; is_commentary_title "$sub_title" && is_commentary=1
       local is_forced=0; [[ "${sub_forced:-0}" =~ ^[0-9]+$ ]] && [[ "${sub_forced:-0}" -gt 0 ]] && is_forced=1
       local is_default=0; [[ "${sub_default:-0}" =~ ^[0-9]+$ ]] && [[ "${sub_default:-0}" -gt 0 ]] && is_default=1
@@ -529,6 +540,7 @@ build_subtitle_plan() {
     while IFS='|' read -r idx codec lang title def forced sdh; do
       [[ -z "$idx" ]] && continue
       local mapped_lang; mapped_lang="$(map_lang "$lang")"
+      [[ -z "$mapped_lang" ]] && mapped_lang="$(normalize_lang "$lang")"
       local is_comm=0; is_commentary_title "$title" && is_comm=1
       local is_forced=0; [[ "${forced:-0}" -eq 1 ]] && is_forced=1
       local is_sdh=0; [[ "${sdh:-0}" -eq 1 ]] && is_sdh=1

@@ -68,9 +68,10 @@ process_one() {
     for idx in $audio_indices; do
       local lang title
       lang=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:language -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "und")
+      lang="$(normalize_lang "$lang")"
       title=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
       # Construct CSV line: index,lang,title
-      audio_info+="${idx},${lang:-und},${title}"$'\n'
+      audio_info+="${idx},${lang},${title}"$'\n'
     done
   fi
 

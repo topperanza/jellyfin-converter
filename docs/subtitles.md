@@ -117,5 +117,5 @@ At least one **forced** track per allowed language is preserved if available. Th
 - **Atomic Writes**: Conversion writes to a temporary file (or separate output directory) and only moves/replaces if successful.
 
 ### Best-Effort Behaviors
-- **Language Detection**: Relies on `ffprobe` metadata. If a track is tagged `und` (Undefined), the converter attempts to guess based on filename/title, but this is heuristic.
+- **Language Detection**: Relies on `ffprobe` metadata. Missing, empty, or unknown language tags are normalized to `und` (Undefined). `und` tracks are generally preserved as fallback unless specific language filtering excludes them.
 - **Commentary Detection**: Relies on "commentary" or "director" keywords in the track title. If these are missing, a commentary track might be treated as a normal audio/subtitle track (and potentially removed if the language doesn't match).
