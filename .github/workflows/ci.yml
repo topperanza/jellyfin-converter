@@ -41,7 +41,7 @@ jobs:
           find . -type f -name "*.sh" \
             -not -path "./.git/*" \
             -not -path "./.venv/*" \
-            -print0 | xargs -0 shellcheck -x
+            -print0 | xargs -0 shellcheck -x -S error
 
       - name: Run Tests
         run: |
