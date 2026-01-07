@@ -27,7 +27,7 @@ EOF
 test_forced_install_failure_prints_diagnostics() {
   OLD_PATH="$PATH"
   PATH="/usr/bin:/bin"
-  SHELLCHECK_INSTALL_SIMULATE_FAIL=1 OUT="$(./scripts/install_shellcheck.sh 2>&1 || true)"
+  OUT="$(SHELLCHECK_INSTALL_SIMULATE_FAIL=1 ./scripts/install_shellcheck.sh 2>&1 || true)"
   PATH="$OLD_PATH"
   assert_contains "$OUT" "PIP_INDEX_URL"
   assert_contains "$OUT" "pip config debug"
