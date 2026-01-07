@@ -1,6 +1,15 @@
 #!/usr/bin/env bash
 set -u
 exists() { command -v "$1" >/dev/null 2>&1; }
+if [[ -n "${SHELLCHECK_INSTALL_SIMULATE_FAIL:-}" ]]; then
+  echo "pip config debug"
+  echo "PIP_INDEX_URL=${PIP_INDEX_URL:-unset}"
+  echo "PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL:-unset}"
+  echo "Hint: set PIP_INDEX_URL ending with /simple"
+  echo "Hint: set HTTP_PROXY/HTTPS_PROXY"
+  echo "Re-run with pip -vvv"
+  exit 2
+fi
 if exists shellcheck; then
   shellcheck --version
   exit 0
@@ -18,15 +27,6 @@ else
     echo "python not found on PATH"
     exit 1
   fi
-fi
-if [[ -n "${SHELLCHECK_INSTALL_SIMULATE_FAIL:-}" ]]; then
-  echo "pip config debug"
-  echo "PIP_INDEX_URL=${PIP_INDEX_URL:-unset}"
-  echo "PIP_EXTRA_INDEX_URL=${PIP_EXTRA_INDEX_URL:-unset}"
-  echo "Hint: set PIP_INDEX_URL ending with /simple"
-  echo "Hint: set HTTP_PROXY/HTTPS_PROXY"
-  echo "Re-run with pip -vvv"
-  exit 2
 fi
 ok=0
 if [[ -n "${VIRTUAL_ENV:-}" ]]; then
