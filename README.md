@@ -54,7 +54,7 @@ The converter implements a smart subtitle selection strategy:
   ```
 
 ## CI & Linting
-- **CI**: Uses `shellcheck-py` (pip-installed ShellCheck) for linting.
+- **CI**: Uses `shellcheck-py` (pip-installed ShellCheck) for linting and `setup-ffmpeg` for ffmpeg/ffprobe.
 - **No Homebrew**: Homebrew is intentionally NOT used to avoid large dependency chains on older macOS (e.g. Catalina).
 - **Tests**: Run `./tests/run.sh` locally to execute the test harness.
 
