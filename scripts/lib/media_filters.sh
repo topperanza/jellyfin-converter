@@ -454,6 +454,56 @@ select_internal_subtitles() {
   fi
 }
 
+# Check if a sidecar file matches a video file according to our discovery rules
+is_sidecar_match() {
+  local video="$1"
+  local sidecar="$2"
+  
+  local fname; fname="$(basename "$video")"
+  local base="${fname%.*}"
+  
+  local stem; stem="$(basename "$sidecar")"; stem="${stem%.*}"
+  local rest=""
+  
+  if [[ "$stem" == "$base" ]]; then
+      rest=""
+  elif [[ "$stem" == "$base"* ]]; then
+      local next_char="${stem:${#base}:1}"
+      case "$next_char" in
+        .|_|-|\ |\(|\)|\[|\]) ;;
+        *) return 1 ;;
+      esac
+      rest="${stem:${#base}}"
+  else
+      return 1
+  fi
+  
+  local lang="" forced=0 sdh=0 commentary=0
+  local lower="$rest"; lower="$(to_lower "$lower")"
+  local -a __tokens=()
+  IFS='._- ()[]' read -r -a __tokens <<< "$rest"
+  local tk
+  for tk in "${__tokens[@]-}"; do
+      [[ -z "$tk" ]] && continue
+      [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
+      case "$(to_lower "$tk")" in
+        forced|forzato|forzati|zwangs|obligatoire) forced=1 ;;
+        sdh|cc|hi|hearing|hearingimpaired|hearing-impaired|hearing_impaired) sdh=1 ;;
+        commentary|commento|kommentar|comentario) commentary=1 ;;
+      esac
+  done
+  [[ -z "$lang" ]] && lang="und"
+
+  # Safety: If suffix exists but contains no recognized tags, treat as false positive
+  if [[ -n "$rest" ]]; then
+      if [[ "$lang" == "und" && "$forced" -eq 0 && "$sdh" -eq 0 && "$commentary" -eq 0 ]]; then
+        return 1
+      fi
+  fi
+  
+  return 0
+}
+
 discover_external_subs() {
   local video="$1"
   local dir; dir="$(dirname "$video")"

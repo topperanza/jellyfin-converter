@@ -60,6 +60,17 @@ You can control subtitle behavior using environment variables.
 | `PREFER_SDH` | `0` | If `1`, SDH/Hearing Impaired subtitles are preferred. If `0`, standard subtitles are preferred. |
 | `MARK_NORMAL_SUB_DEFAULT` | `1` | If `1`, the best normal subtitle track is flagged as `default`. |
 
+## Sidecar Deletion Safety
+
+When `DELETE=1` (APPLY mode) is enabled, the script can optionally delete external sidecar files that were successfully merged into the output MKV.
+
+**By default, sidecar files are NEVER deleted (`DELETE_SIDECARS=0`).**
+
+To enable deletion, set `DELETE_SIDECARS=1`. Even when enabled, a strict safety check is performed:
+1.  **Uniqueness Check**: A sidecar file will only be deleted if it is uniquely anchored to the video being processed.
+2.  **Ambiguity Protection**: If a sidecar file matches multiple videos in the same directory (e.g., `movie.srt` matching both `movie.mp4` and `movie.mkv`), it will be preserved to prevent data loss.
+3.  **Shared Files**: Files that appear to be shared or ambiguous are skipped with a warning.
+
 ## Examples
 
 ### Example 1: Basic English & Italian
@@ -98,24 +109,4 @@ You can control subtitle behavior using environment variables.
 
 **Outcome:**
 1.  Eng SRT -> Kept. Marked `default`.
-2.  Eng PGS -> Removed (Bitmap subtitles disabled).
-
-## Behavior Guarantees
-
-### Deterministic Selection
-For a given set of input streams and sidecar files, the converter **ALWAYS** selects the same set of subtitles in the same order. This ensures reproducibility and stability across runs.
-
-### Sidecar Priority
-External sidecar files (e.g., `.srt`) that match the strict naming rules **ALWAYS** supersede internal subtitles for the same language and type (Normal/Forced) if they are considered "better" (e.g., Text > Bitmap).
-
-### Forced Track Preservation
-At least one **forced** track per allowed language is preserved if available. This ensures that foreign language segments in a movie are always covered.
-
-### Safety Mechanisms
-- **Read-Only Discovery**: The subtitle discovery phase never modifies files.
-- **Dry Run Default**: `DRY_RUN=1` is the default. It prints the plan but touches nothing.
-- **Atomic Writes**: Conversion writes to a temporary file (or separate output directory) and only moves/replaces if successful.
-
-### Best-Effort Behaviors
-- **Language Detection**: Relies on `ffprobe` metadata. Missing, empty, or unknown language tags are normalized to `und` (Undefined). `und` tracks are generally preserved as fallback unless specific language filtering excludes them.
-- **Commentary Detection**: Relies on "commentary" or "director" keywords in the track title. If these are missing, a commentary track might be treated as a normal audio/subtitle track (and potentially removed if the language doesn't match).
+2.  Eng PGS -> Removed.

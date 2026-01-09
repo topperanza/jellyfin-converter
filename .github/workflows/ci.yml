@@ -32,6 +32,16 @@ jobs:
       - name: Verify ShellCheck
         run: shellcheck --version
 
+      - name: Install ffmpeg
+        uses: federico-busato/setup-ffmpeg@v2
+        with:
+          ffmpeg-version: release
+
+      - name: Verify ffmpeg
+        run: |
+          ffmpeg -version
+          ffprobe -version
+
       - name: Bash Syntax Check
         run: |
           find . -type f -name "*.sh" -print0 | xargs -0 bash -n

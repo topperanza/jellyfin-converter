@@ -31,7 +31,11 @@ DRY_RUN=0 DELETE=0 ./run.sh /path/to/videos
 
 ## Enable deletion (advanced)
 ```bash
+# Deletes source video after successful conversion
 DRY_RUN=0 DELETE=1 ./run.sh /path/to/videos
+
+# Also delete sidecar files (only if uniquely anchored to the video)
+DRY_RUN=0 DELETE=1 DELETE_SIDECARS=1 ./run.sh /path/to/videos
 ```
 
 ## Help, version, and dry-run confirmation
@@ -54,7 +58,7 @@ The converter implements a smart subtitle selection strategy:
   ```
 
 ## CI & Linting
-- **CI**: Uses `shellcheck-py` (pip-installed ShellCheck) for linting.
+- **CI**: Uses `shellcheck-py` (pip-installed ShellCheck) for linting and `setup-ffmpeg` for ffmpeg/ffprobe.
 - **No Homebrew**: Homebrew is intentionally NOT used to avoid large dependency chains on older macOS (e.g. Catalina).
 - **Tests**: Run `./tests/run.sh` locally to execute the test harness.
 
