@@ -2,6 +2,7 @@
 
 setup() {
   source "scripts/lib/media_filters.sh"
+  export KEEP_BITMAP_SUBS=0
 }
 
 test_discovery_case1_simple() {
@@ -73,4 +74,31 @@ test_discovery_strict_anchoring() {
   
   # Ensure the sequel is NOT in the output
   assert_not_contains "$output" "Sequel"
+}
+
+test_discovery_bitmap_sidecars_keep0() {
+  export KEEP_BITMAP_SUBS=0
+  local video="tests/fixtures/discovery/bitmap_sidecars/Film.mkv"
+  local output
+  output="$(discover_external_subs "$video")"
+
+  assert_not_contains "$output" "Film.eng.sup|eng|0|0|0|sup"
+  assert_not_contains "$output" "Film.eng.idx|eng|0|0|0|idx"
+  assert_not_contains "$output" "Film.ita.sup|ita|0|0|0|sup"
+}
+
+test_discovery_bitmap_sidecars_keep1() {
+  export KEEP_BITMAP_SUBS=1
+  local video="tests/fixtures/discovery/bitmap_sidecars/Film.mkv"
+  local output
+  output="$(discover_external_subs "$video")"
+
+  assert_contains "$output" "Film.eng.sup|eng|0|0|0|sup"
+  assert_contains "$output" "Film.ita.sup|ita|0|0|0|sup"
+  assert_contains "$output" "Film.eng.idx|eng|0|0|0|idx"
+
+  # Requires .idx + .sub pair
+  assert_not_contains "$output" "Film.ita.idx|ita|0|0|0|idx"
+  # Never emit the .sub companion directly
+  assert_not_contains "$output" "Film.eng.sub"
 }

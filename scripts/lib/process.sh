@@ -95,31 +95,54 @@ process_one() {
   echo "Output: $out"
 
   # Probe video/audio codecs
-  local vcodec acodec
-  vcodec=$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name \
-           -of default=nw=1:nk=1 "$src" < /dev/null 2>/dev/null || echo "unknown")
-  acodec=$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name \
-           -of default=nw=1:nk=1 "$src" < /dev/null 2>/dev/null || echo "none")
+  local probe_data
+  probe_data="$(probe_file "$src")"
+
+  local vcodec="unknown"
+  local acodec="none"
+  local height="?"
   
-  local height; height=$(ffprobe -v error -select_streams v:0 \
-    -show_entries stream=height -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "?")
+  local vid_idx; vid_idx="$(probe_get_stream_indices "$probe_data" "video" | head -n1)"
+  if [[ -n "$vid_idx" ]]; then
+     vcodec="$(probe_get_stream_val "$probe_data" "$vid_idx" "codec_name")"
+     [[ -z "$vcodec" ]] && vcodec="unknown"
+     height="$(probe_get_stream_val "$probe_data" "$vid_idx" "height")"
+     [[ -z "$height" ]] && height="?"
+  fi
+
+  local aud_idx; aud_idx="$(probe_get_stream_indices "$probe_data" "audio" | head -n1)"
+  if [[ -n "$aud_idx" ]]; then
+     acodec="$(probe_get_stream_val "$probe_data" "$aud_idx" "codec_name")"
+     [[ -z "$acodec" ]] && acodec="none"
+  fi
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
 
   # 1. Get list of audio streams (index)
-  local audio_indices
-  audio_indices=$(ffprobe -v error -select_streams a -show_entries stream=index -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+  local audio_array_indices
+  audio_array_indices="$(probe_get_stream_indices "$probe_data" "audio")"
+  
+  local audio_indices=""
+  if [[ -n "$audio_array_indices" ]]; then
+    for idx in $audio_array_indices; do
+       local abs_idx; abs_idx="$(probe_get_stream_val "$probe_data" "$idx" "index")"
+       [[ -n "$abs_idx" ]] && audio_indices+="$abs_idx"$'\n'
+    done
+  fi
   
   # 2. Build audio info manually (reliable)
   local audio_info=""
-  if [[ -n "$audio_indices" ]]; then
-    for idx in $audio_indices; do
-      local lang title
-      lang=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:language -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "und")
+  if [[ -n "$audio_array_indices" ]]; then
+    for idx in $audio_array_indices; do
+      local lang title abs_idx
+      abs_idx="$(probe_get_stream_val "$probe_data" "$idx" "index")"
+      lang="$(probe_get_stream_val "$probe_data" "$idx" "tags.language")"
+      [[ -z "$lang" ]] && lang="und"
       lang="$(normalize_lang "$lang")"
-      title=$(ffprobe -v error -select_streams "0:$idx" -show_entries stream=tags:title -of csv=p=0 "$src" < /dev/null 2>/dev/null || echo "")
+      title="$(probe_get_stream_val "$probe_data" "$idx" "tags.title")"
+      
       # Construct CSV line: index,lang,title
-      audio_info+="${idx},${lang},${title}"$'\n'
+      audio_info+="${abs_idx},${lang},${title}"$'\n'
     done
   fi
 
@@ -128,7 +151,7 @@ process_one() {
 
   # Subtitle Selection (Phase 3: Unified Plan)
   local plan_lines
-  plan_lines="$(build_subtitle_plan "$src")"
+  plan_lines="$(build_subtitle_plan "$src" "$probe_data")"
 
   # Debug: Print Subtitles if requested
   if [[ "${PRINT_SUBTITLES:-0}" -eq 1 ]]; then
@@ -137,7 +160,7 @@ process_one() {
     echo "Source: $src"
     echo "----------------------------------------"
     echo "Internal Subtitles (Raw Probe):"
-    probe_internal_subs "$src" | sed 's/^/  /'
+    probe_internal_subs_from_data "$probe_data" | sed 's/^/  /'
     echo "----------------------------------------"
     echo "External Subtitles (Discovered):"
     discover_external_subs "$src" | sed 's/^/  /'
@@ -174,6 +197,15 @@ process_one() {
         # External: id is file path
         sub_inputs+=("-i" "$id")
         sub_files+=("$id")
+        if [[ "$(to_lower "$codec")" == "idx" ]]; then
+          local sub_pair="${id%.*}.sub"
+          local sub_pair_upper="${id%.*}.SUB"
+          if [[ -f "$sub_pair" ]]; then
+            sub_files+=("$sub_pair")
+          elif [[ -f "$sub_pair_upper" ]]; then
+            sub_files+=("$sub_pair_upper")
+          fi
+        fi
         subtitle_map_args+=("-map" "${ext_input_idx}:s:0")
         echo "  → Keeping external subtitle: $(basename "$id") [$display_lang] ($codec) [forced=$is_forced default=$is_def]"
         ((ext_input_idx+=1))
@@ -210,7 +242,7 @@ process_one() {
 
   # Remux vs transcode policy evaluation
   local video_bitrate_kbps filesize_mb height_num height_display
-  video_bitrate_kbps=$(get_video_bitrate_kbps "$src")
+  video_bitrate_kbps=$(get_video_bitrate_kbps_from_data "$probe_data")
   filesize_mb=$(get_filesize_mb "$src")
   height_num=0
   [[ "$height" =~ ^[0-9]+$ ]] && height_num="$height"
@@ -331,7 +363,7 @@ process_one() {
   # TRANSCODE
   local hw; hw=$(detect_hw_accel)
   local -a encode_args=()
-  local optimal_crf; optimal_crf=$(get_optimal_crf "$src")
+  local optimal_crf; optimal_crf=$(get_optimal_crf_from_data "$probe_data")
   local use_crf="${CRF:-$optimal_crf}"
   
   case "$hw" in
@@ -387,10 +419,27 @@ process_one() {
       # Support both old relative "a:0" and new absolute "1" indices
       local spec="0:$idx"
 
-      local ch
-      ch=$(ffprobe -v error -select_streams "$spec" -show_entries stream=channels -of csv=p=0 "$src" 2>/dev/null || echo "2")
-      local codec
-      codec=$(ffprobe -v error -select_streams "$spec" -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")
+      # Find array index matching absolute index $idx
+      local arr_idx=""
+      if [[ -n "$audio_array_indices" ]]; then
+          for aidx in $audio_array_indices; do
+              local sidx; sidx="$(probe_get_stream_val "$probe_data" "$aidx" "index")"
+              if [[ "$sidx" == "$idx" ]]; then
+                  arr_idx="$aidx"
+                  break
+              fi
+          done
+      fi
+
+      local ch="2"
+      local codec="unknown"
+      
+      if [[ -n "$arr_idx" ]]; then
+          ch="$(probe_get_stream_val "$probe_data" "$arr_idx" "channels")"
+          codec="$(probe_get_stream_val "$probe_data" "$arr_idx" "codec_name")"
+      fi
+      [[ -z "$ch" ]] && ch="2"
+      [[ -z "$codec" ]] && codec="unknown"
       
       # Sanitize channel count
       [[ -z "$ch" || ! "$ch" =~ ^[0-9]+$ ]] && ch=2

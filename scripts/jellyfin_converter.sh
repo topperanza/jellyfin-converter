@@ -27,6 +27,8 @@ fi
 
 # shellcheck source=scripts/lib/compat.sh
 source "$SCRIPT_DIR/lib/compat.sh"
+# shellcheck source=scripts/lib/ffprobe.sh
+source "$SCRIPT_DIR/lib/ffprobe.sh"
 # shellcheck source=scripts/lib/ffmpeg.sh
 source "$SCRIPT_DIR/lib/ffmpeg.sh"
 # shellcheck source=scripts/lib/media_filters.sh
@@ -45,6 +47,8 @@ DEFAULT_CODEC="h264"
 DEFAULT_HW_ACCEL="auto"
 DEFAULT_OVERWRITE=0
 DEFAULT_DELETE=0
+DEFAULT_DELETE_SIDECARS=0
+DEFAULT_ALLOW_UND_AUDIO=0
 DEFAULT_PARALLEL=1
 DEFAULT_DRY_RUN=1
 DEFAULT_SKIP_DELETE_CONFIRM=0
@@ -160,6 +164,7 @@ Options:
   --max-filesize-mb N       Max file size allowed for remux (0=ignore)
   --target-height N         Max video height allowed for remux (0=ignore)
   --preflight[=info|strict]  Run environment checks before processing
+  --allow-und-audio          Keep audio tracks with undefined language
   --print-subtitles          Debug: Print subtitle inventory and selection plan
   --dry-run                  Preview actions without writing outputs (default)
   --version                  Show script version and exit
@@ -181,6 +186,7 @@ HW_ACCEL="${HW_ACCEL:-$DEFAULT_HW_ACCEL}"  # auto|nvenc|qsv|vaapi|none
 OVERWRITE="${OVERWRITE:-$DEFAULT_OVERWRITE}"   # 1 to overwrite existing outputs
 DELETE="${DELETE:-$DEFAULT_DELETE}"         # 1 to delete originals after success
 DELETE_SIDECARS="${DELETE_SIDECARS:-$DEFAULT_DELETE_SIDECARS}" # 1 to delete sidecar files if safe
+ALLOW_UND_AUDIO="${ALLOW_UND_AUDIO:-$DEFAULT_ALLOW_UND_AUDIO}" # 1 to keep audio tracks with undefined language
 PARALLEL="${PARALLEL:-$DEFAULT_PARALLEL}"     # Number of simultaneous conversions
 DRY_RUN="${DRY_RUN:-$DEFAULT_DRY_RUN}"       # 1 to test without converting
 SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-$DEFAULT_SKIP_DELETE_CONFIRM}"  # 1 to skip delete confirmation (for automation)
@@ -301,7 +307,7 @@ export -f process_one map_lang is_eng_or_ita is_codec_compatible_video is_codec_
 export -f detect_hw_accel get_optimal_crf log_conversion encoder_present get_video_bitrate_kbps get_filesize_mb
 export -f build_audio_map_args finalize_audio_selection collect_subtitle is_commentary_title select_internal_subtitles
 export -f run_ffmpeg
-export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DRY_RUN LOGFILE DONE_FILE PRINT_SUBTITLES
+export SCAN_DIR OUTROOT OUTROOT_PATH LOG_DIR CRF PRESET CODEC HW_ACCEL RESOLVED_HW OVERWRITE DELETE DELETE_SIDECARS ALLOW_UND_AUDIO DRY_RUN LOGFILE DONE_FILE PRINT_SUBTITLES INCLUDE_HIDDEN
 
 # Argument parsing for preflight flag + optional path
 while [[ $# -gt 0 ]]; do
@@ -382,6 +388,10 @@ while [[ $# -gt 0 ]]; do
       PREFLIGHT_MODE="strict"
       shift
       ;;
+    --allow-und-audio)
+      ALLOW_UND_AUDIO=1
+      shift
+      ;;
     --print-subtitles)
       PRINT_SUBTITLES=1
       shift
@@ -403,9 +413,12 @@ while [[ $# -gt 0 ]]; do
       exit 1
       ;;
     *)
+      if [[ -n "${SCAN_DIR:-}" ]]; then
+        echo "ERROR: Multiple directories provided (or unexpected argument): $1"
+        exit 1
+      fi
       SCAN_DIR="$1"
       shift
-      break
       ;;
   esac
 done

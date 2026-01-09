@@ -75,13 +75,13 @@ jobs:
                 fi
               done
               if [ -n "$filtered" ]; then
-                ./tests/run.sh "$filtered"
+                $TEST_SHELL ./tests/run.sh "$filtered"
               else
                 echo "No ffprobe-independent tests found; skipping."
               fi
             fi
           elif [ -f "./tests/run.sh" ]; then
-            bash ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
+            $TEST_SHELL ./tests/run.sh "tests/suite_*.sh tests/test_*.sh"
           else
             echo "No test runner found."
           fi

@@ -65,6 +65,34 @@ probe_internal_subs() {
     -of csv=p=0:s='|' "$src" < /dev/null 2>/dev/null || echo ""
 }
 
+probe_internal_subs_from_data() {
+  local probe_data="$1"
+  local idxs
+  idxs=$(probe_get_stream_indices "$probe_data" "subtitle")
+  
+  # Iterate line by line
+  if [[ -n "$idxs" ]]; then
+    while read -r idx; do
+      [[ -z "$idx" ]] && continue
+      local codec
+      codec=$(probe_get_stream_val "$probe_data" "$idx" "codec_name")
+      local lang
+      lang=$(probe_get_stream_val "$probe_data" "$idx" "tags.language")
+      local title
+      title=$(probe_get_stream_val "$probe_data" "$idx" "tags.title")
+      local is_default
+      is_default=$(probe_get_stream_val "$probe_data" "$idx" "disposition.default")
+      local is_forced
+      is_forced=$(probe_get_stream_val "$probe_data" "$idx" "disposition.forced")
+      local is_hi
+      is_hi=$(probe_get_stream_val "$probe_data" "$idx" "disposition.hearing_impaired")
+      
+      # Format: index|codec|lang|title|default|forced|hearing_impaired
+      echo "${idx}|${codec}|${lang}|${title}|${is_default}|${is_forced}|${is_hi}"
+    done <<< "$idxs"
+  fi
+}
+
 is_text_codec() {
   local c
   c="$(to_lower "$1")"
@@ -83,13 +111,22 @@ is_bitmap_codec() {
   esac
 }
 
+is_bitmap_sidecar_ext() {
+  local ext
+  ext="$(to_lower "$1")"
+  case "$ext" in
+    sup|idx) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
 if have_bash_ge_4; then
   build_audio_map_args() {
     local audio_info="$1"
-    local -n out_map_args="$2"
-    local -n out_russian_tracks="$3"
-    local -n out_has_eng_or_ita="$4"
-    local -n out_has_non_russian="$5"
+    local -n out_map_args="$2" # bash32-ignore
+    local -n out_russian_tracks="$3" # bash32-ignore
+    local -n out_has_eng_or_ita="$4" # bash32-ignore
+    local -n out_has_non_russian="$5" # bash32-ignore
 
     out_map_args=()
     out_russian_tracks=()
@@ -120,9 +157,14 @@ if have_bash_ge_4; then
           out_has_non_russian=1
           echo "  → Keeping audio track $idx: $mapped_lang (non-Russian)"
         elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-          out_map_args+=("-map" "0:$idx")
-          out_has_non_russian=1
-          echo "  → Keeping audio track $idx: unknown (preserving)"
+          echo "DEBUG: ALLOW_UND_AUDIO=${ALLOW_UND_AUDIO}"
+           if [[ "${ALLOW_UND_AUDIO:-0}" -eq 1 ]]; then
+            out_map_args+=("-map" "0:$idx")
+            out_has_non_russian=1
+            echo "  → Keeping audio track $idx: unknown (preserving)"
+          else
+            echo "  × Skipping audio track $idx: unknown (not allowed)"
+          fi
         fi
         ((audio_idx+=1))
       done <<< "$audio_info" || true
@@ -132,8 +174,8 @@ if have_bash_ge_4; then
   }
 
   finalize_audio_selection() {
-    local -n _audio_map_args="$1"
-    local -n _russian_tracks="$2"
+    local -n _audio_map_args="$1" # bash32-ignore
+    local -n _russian_tracks="$2" # bash32-ignore
     local has_eng_or_ita="$3"
     local has_non_russian="$4"
 
@@ -250,9 +292,13 @@ else
           eval "$out_has_non_russian=1"
           echo "  → Keeping audio track $idx: $mapped_lang (non-Russian)"
         elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-          eval "$out_map_args+=(\"-map\" \"0:$idx\")"
-          eval "$out_has_non_russian=1"
-          echo "  → Keeping audio track $idx: unknown (preserving)"
+           if [[ "${ALLOW_UND_AUDIO:-0}" -eq 1 ]]; then
+             eval "$out_map_args+=(\"-map\" \"0:$idx\")"
+            eval "$out_has_non_russian=1"
+            echo "  → Keeping audio track $idx: unknown (preserving)"
+          else
+            echo "  × Skipping audio track $idx: unknown (not allowed)"
+          fi
         fi
         ((audio_idx+=1))
       done <<< "$audio_info" || true
@@ -510,6 +556,7 @@ discover_external_subs() {
   local fname; fname="$(basename "$video")"
   local base="${fname%.*}"
   local prefer_sdh="${PREFER_SDH:-0}"
+  local keep_bitmap="${KEEP_BITMAP_SUBS:-0}"
 
   local old_nullglob
   shopt -q nullglob && old_nullglob=1 || old_nullglob=0
@@ -522,8 +569,16 @@ discover_external_subs() {
     ext="$(to_lower "${f##*.}")"
     case "$ext" in
       srt|ass|ssa|vtt) ;;
+      sup|idx)
+        [[ "$keep_bitmap" == "1" ]] || continue
+        ;;
       *) continue ;;
     esac
+    if [[ "$ext" == "idx" ]]; then
+      local sub_pair="${f%.*}.sub"
+      local sub_pair_upper="${f%.*}.SUB"
+      [[ -f "$sub_pair" || -f "$sub_pair_upper" ]] || continue
+    fi
     stem="$(basename "$f")"; stem="${stem%.*}"
     if [[ "$stem" == "$base" ]]; then
       rest=""
@@ -574,10 +629,15 @@ discover_external_subs() {
 
 build_subtitle_plan() {
   local video="$1"
+  local probe_data="${2:-}"
   
   # 1. Gather Candidates
   local internal_raw
-  internal_raw="$(probe_internal_subs "$video")"
+  if [[ -n "$probe_data" ]]; then
+    internal_raw="$(probe_internal_subs_from_data "$probe_data")"
+  else
+    internal_raw="$(probe_internal_subs "$video")"
+  fi
   
   local external_raw
   external_raw="$(discover_external_subs "$video")"
@@ -622,26 +682,43 @@ build_subtitle_plan() {
     
     # Calculate Score (Lower is better)
     local score=0
+    local source_rank=1
+    local id_key=""
     
-    # Origin Score (External Text > Internal Text > Bitmap)
-    # External is always text (filtered by discover_external_subs)
-    # Internal can be text or bitmap
+    # Origin Score & Tie-Break Prep
     if [[ "$source" == "ext" ]]; then
-      if [[ "${PREFER_EXTERNAL_SUBS:-1}" == "1" ]]; then
-        score=$((score + 0))
+      source_rank=1 # Prefer Internal on ties (unless score differs)
+      id_key="$(basename "$id")"
+      
+      if is_bitmap_sidecar_ext "$codec"; then
+        if [[ "${KEEP_BITMAP_SUBS:-0}" != "1" ]]; then
+          continue
+        fi
+        score=$((score + 200))
       else
-        score=$((score + 100))
+        if [[ "${PREFER_EXTERNAL_SUBS:-1}" == "1" ]]; then
+          score=$((score + 0))
+        else
+          score=$((score + 100))
+        fi
       fi
     else
+      source_rank=0 # Internal preferred on ties
+      printf -v id_key "%05d" "$id"
+      
       if is_text_codec "$codec"; then
         score=$((score + 100))
       else
-        if [[ "${KEEP_BITMAP_SUBS:-1}" == "0" ]]; then
+        if [[ "${KEEP_BITMAP_SUBS:-0}" == "0" ]]; then
              continue # Skip this candidate
         fi
         score=$((score + 200))
       fi
     fi
+    
+    # Tie-Break Key: source_rank + id_key
+    # Ensures deterministic order when scores are equal
+    local tie_key="${source_rank}:${id_key}"
     
     # SDH Score
     if [[ "$prefer_sdh" -eq 1 ]]; then
@@ -655,14 +732,15 @@ build_subtitle_plan() {
       srt|subrip) score=$((score + 0)) ;;
       vtt|webvtt) score=$((score + 10)) ;;
       ass|ssa) score=$((score + 20)) ;;
+      sup|idx) score=$((score + 0)) ;;
       *) score=$((score + 30)) ;;
     esac
     
     # Default Score (Internal tie-breaker)
     [[ "$def" -eq 1 ]] && score=$((score - 5))
     
-    # Rank line: score|source|id|lang|forced|sdh|comm|codec
-    ranked_list+="${score}|${source}|${id}|${lang}|${forced}|${sdh}|${comm}|${codec}"$'\n'
+    # Rank line: score|tie_key|source|id|lang|forced|sdh|comm|codec
+    ranked_list+="${score}|${tie_key}|${source}|${id}|${lang}|${forced}|${sdh}|${comm}|${codec}"$'\n'
   done <<< "$combined_list"
   
   # 3. Select Winners
@@ -674,11 +752,11 @@ build_subtitle_plan() {
   local CHOSEN_KEYS=""
   local DEFAULT_ASSIGNED=0
   
-  # Sort by score ascending, then by source descending (int before ext on ties)
+  # Sort by score ascending, then by tie_key ascending
   local sorted_list
-  sorted_list="$(echo "$ranked_list" | sort -t '|' -k1,1n -k2,2r)"
+  sorted_list="$(echo "$ranked_list" | sort -t '|' -k1,1n -k2,2)"
   
-  while IFS='|' read -r score source id lang forced sdh comm codec; do
+  while IFS='|' read -r score tie_key source id lang forced sdh comm codec; do
     [[ -z "$score" ]] && continue
     
     local keep=0
