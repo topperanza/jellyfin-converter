@@ -22,6 +22,7 @@
 ## Default paths
 - Script: `scripts/jellyfin_converter.sh`
 - Logs: `logs/`
-- Converted outputs: `converted/` under the scan root
+- Converted outputs: `converted/` under the scan root (excluded from recursive scans)
+- Hidden paths: excluded from scans by default (`INCLUDE_HIDDEN=1` to override)
 - Config presets: `config/default_profiles.env`
 - Examples: `examples/`

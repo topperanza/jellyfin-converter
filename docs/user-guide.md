@@ -11,6 +11,11 @@ Key notes:
 - Logs default to `logs/` at the project root.
 - Converted files land in `converted/` inside the scanned directory.
 
+## Scanning rules
+- **Output exclusion**: The `converted/` folder (or configured `OUTROOT`) is automatically excluded from scanning if it lies within the scan path.
+- **Hidden exclusion**: Hidden files/folders (starting with `.`) and common generated directories are skipped by default.
+- **Override**: Set `INCLUDE_HIDDEN=1` to force scanning of hidden paths.
+
 ## Logs and artifacts
 - Conversion log: `logs/conversion.log`
 - Processed marker: `logs/.processed`

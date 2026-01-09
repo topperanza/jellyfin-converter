@@ -43,3 +43,4 @@ tests/tmp/
 ci_log.txt
 log.txt
 pr_body.md
+.venv-shellcheck/

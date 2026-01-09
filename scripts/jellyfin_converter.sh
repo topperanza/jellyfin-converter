@@ -50,6 +50,7 @@ DEFAULT_DRY_RUN=1
 DEFAULT_SKIP_DELETE_CONFIRM=0
 DEFAULT_PROFILE="jellyfin-1080p"
 DEFAULT_PRINT_SUBTITLES=0
+DEFAULT_INCLUDE_HIDDEN=0
 
 PROFILE="${PROFILE:-$DEFAULT_PROFILE}"
 FORCE_TRANSCODE="${FORCE_TRANSCODE:-}"
@@ -58,7 +59,7 @@ MAX_FILESIZE_MB="${MAX_FILESIZE_MB:-}"
 REMUX_MAX_GB="${REMUX_MAX_GB:-}"
 TARGET_HEIGHT="${TARGET_HEIGHT:-}"
 
-ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB REMUX_MAX_GB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR PRINT_SUBTITLES)
+ENV_KEYS=(PROFILE FORCE_TRANSCODE MAX_VIDEO_BITRATE_KBPS MAX_FILESIZE_MB REMUX_MAX_GB TARGET_HEIGHT CRF PRESET CODEC HW_ACCEL OVERWRITE DELETE PARALLEL DRY_RUN SKIP_DELETE_CONFIRM OUTROOT LOG_DIR PRINT_SUBTITLES INCLUDE_HIDDEN)
 ENV_DEFAULTS=()
 PROFILE_FORCE_TRANSCODE=0
 PROFILE_MAX_VIDEO_BITRATE_KBPS=0
@@ -141,6 +142,7 @@ configure_policy_defaults() {
     "$DEFAULT_OUTROOT"
     "$DEFAULT_LOG_DIR"
     "$DEFAULT_PRINT_SUBTITLES"
+    "$DEFAULT_INCLUDE_HIDDEN"
   )
 }
 
@@ -182,6 +184,7 @@ PARALLEL="${PARALLEL:-$DEFAULT_PARALLEL}"     # Number of simultaneous conversio
 DRY_RUN="${DRY_RUN:-$DEFAULT_DRY_RUN}"       # 1 to test without converting
 SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-$DEFAULT_SKIP_DELETE_CONFIRM}"  # 1 to skip delete confirmation (for automation)
 PREFLIGHT_MODE="${PREFLIGHT_MODE:-off}" # off|info|strict
+INCLUDE_HIDDEN="${INCLUDE_HIDDEN:-$DEFAULT_INCLUDE_HIDDEN}" # 1 to include hidden files/dirs
 
 resolve_outroot() {
   local base="$OUTROOT"
@@ -231,6 +234,7 @@ report_env_overrides() {
       SKIP_DELETE_CONFIRM) current="$SKIP_DELETE_CONFIRM" ;;
       OUTROOT) current="$OUTROOT" ;;
       LOG_DIR) current="$LOG_DIR" ;;
+      INCLUDE_HIDDEN) current="$INCLUDE_HIDDEN" ;;
       *) current="" ;;
     esac
     if [[ "$current" != "$expected" ]]; then
@@ -490,12 +494,46 @@ set -f
 find_args=( $(build_find_pattern) )
 set +f
 
+# Build prune arguments
+prune_expr=()
+if [[ "$INCLUDE_HIDDEN" != "1" ]]; then
+  # Prune hidden directories (and files starting with .)
+  prune_expr+=("-name" ".*")
+fi
+
+# Prune output directory if it is inside SCAN_DIR
+if [[ "$OUTROOT_PATH" == "$SCAN_DIR"/* ]]; then
+  if [[ ${#prune_expr[@]} -gt 0 ]]; then
+    prune_expr+=("-o")
+  fi
+  prune_expr+=("-path" "$OUTROOT_PATH")
+fi
+
+# Prune log directory if it is inside SCAN_DIR
+if [[ "$LOG_DIR" == "$SCAN_DIR"/* ]]; then
+  if [[ ${#prune_expr[@]} -gt 0 ]]; then
+    prune_expr+=("-o")
+  fi
+  prune_expr+=("-path" "$LOG_DIR")
+fi
+
+# Construct the full find command array
+find_cmd=("find" "$SCAN_DIR")
+
+if [[ ${#prune_expr[@]} -gt 0 ]]; then
+  # -type d \( ... \) -prune -o
+  find_cmd+=("-type" "d" "(" "${prune_expr[@]}" ")" "-prune" "-o")
+fi
+
+# Add the file search part
+find_cmd+=("-type" "f" "(" "${find_args[@]}" ")" "-print0")
+
 if command -v parallel >/dev/null 2>&1 && [[ "$PARALLEL" -gt 1 ]]; then
   echo "Using GNU Parallel with $PARALLEL jobs"
-  find "$SCAN_DIR" -type f \( "${find_args[@]}" \) -print0 | \
+  "${find_cmd[@]}" | \
     parallel -0 -j "$PARALLEL" --bar process_one {}
 else
-  find "$SCAN_DIR" -type f \( "${find_args[@]}" \) -print0 | while IFS= read -r -d '' f; do
+  "${find_cmd[@]}" | while IFS= read -r -d '' f; do
     process_one "$f" < /dev/null
   done
 fi
