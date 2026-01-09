@@ -31,7 +31,11 @@ DRY_RUN=0 DELETE=0 ./run.sh /path/to/videos
 
 ## Enable deletion (advanced)
 ```bash
+# Deletes source video after successful conversion
 DRY_RUN=0 DELETE=1 ./run.sh /path/to/videos
+
+# Also delete sidecar files (only if uniquely anchored to the video)
+DRY_RUN=0 DELETE=1 DELETE_SIDECARS=1 ./run.sh /path/to/videos
 ```
 
 ## Help, version, and dry-run confirmation

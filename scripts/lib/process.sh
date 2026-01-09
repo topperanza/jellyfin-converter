@@ -1,6 +1,54 @@
 #!/usr/bin/env bash
 # Core processing logic for single file conversion
 
+# Check if a sidecar file is safe to delete
+# Returns 0 if safe, 1 if unsafe (ambiguous or claimed by others)
+is_sidecar_safe_to_delete() {
+  local sidecar="$1"
+  local current_video="$2"
+  
+  # 1. Global toggle check
+  if [[ "${DELETE_SIDECARS:-0}" != "1" ]]; then
+    return 1
+  fi
+  
+  local dir; dir="$(dirname "$sidecar")"
+  
+  # 2. Check for ambiguity/uniqueness
+  # Iterate over all other video files in the same directory
+  local other_video
+  local found_other_claimant=0
+  
+  local old_nullglob
+  shopt -q nullglob && old_nullglob=1 || old_nullglob=0
+  shopt -s nullglob
+  
+  for other_video in "$dir"/*; do
+    [[ -f "$other_video" ]] || continue
+    [[ "$other_video" == "$current_video" ]] && continue
+    
+    # Check if it's a video file
+    local ext; ext="$(to_lower "${other_video##*.}")"
+    if [[ ! "$VIDEO_FORMATS" =~ $ext ]]; then
+        continue
+    fi
+    
+    if is_sidecar_match "$other_video" "$sidecar"; then
+      echo "  ⚠ Sidecar ambiguous: matches other video $(basename "$other_video")"
+      found_other_claimant=1
+      break
+    fi
+  done
+  
+  [[ "$old_nullglob" -eq 0 ]] && shopt -u nullglob
+  
+  if [[ "$found_other_claimant" -eq 1 ]]; then
+    return 1
+  fi
+  
+  return 0
+}
+
 process_one() {
   local src="$1"
   # shellcheck disable=SC2034
@@ -250,11 +298,19 @@ process_one() {
         log_conversion "$src" "$out" "remux"
         
         if [[ "$DELETE" == "1" ]]; then
+          local -a files_to_delete=("$src")
+          
           if [[ ${#sub_files[@]} -gt 0 ]]; then
-            rm -f "$src" "${sub_files[@]}"
-          else
-            rm -f "$src"
+            for sub in "${sub_files[@]}"; do
+              if is_sidecar_safe_to_delete "$sub" "$src"; then
+                files_to_delete+=("$sub")
+              else
+                 echo "  ⚠ Keeping sidecar (safety check): $(basename "$sub")"
+              fi
+            done
           fi
+          
+          rm -f "${files_to_delete[@]}"
           echo "✓ Deleted originals"
         fi
         
@@ -388,7 +444,19 @@ process_one() {
       log_conversion "$src" "$out" "transcode"
       
       if [[ "$DELETE" == "1" ]]; then
-        rm -f "$src" "${sub_files[@]}"
+        local -a files_to_delete=("$src")
+        
+        if [[ ${#sub_files[@]} -gt 0 ]]; then
+          for sub in "${sub_files[@]}"; do
+            if is_sidecar_safe_to_delete "$sub" "$src"; then
+              files_to_delete+=("$sub")
+            else
+               echo "  ⚠ Keeping sidecar (safety check): $(basename "$sub")"
+            fi
+          done
+        fi
+        
+        rm -f "${files_to_delete[@]}"
         echo "✓ Deleted originals"
       fi
       
