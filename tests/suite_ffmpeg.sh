@@ -12,6 +12,7 @@ setup() {
   export FFPROBE_OUTPUT=""
   export PREFER_SDH=0
   export MARK_NORMAL_SUB_DEFAULT=0
+  export KEEP_BITMAP_SUBS=0
 }
 
 test_plan_mixed_sources() {
@@ -78,4 +79,40 @@ test_plan_scoring_preference() {
   
   assert_contains "$plan" "ext|/ext/eng.srt|eng|0|srt|0"
   assert_not_contains "$plan" "int|0|eng|0|hdmv_pgs_subtitle|0"
+}
+
+test_plan_scoring_external_bitmap_vs_internal_text() {
+  export KEEP_BITMAP_SUBS=1
+
+  probe_internal_subs() {
+    echo "0|subrip|eng|English|0|0|0"
+  }
+
+  discover_external_subs() {
+    echo "/ext/eng.sup|eng|0|0|0|sup"
+  }
+
+  local plan
+  plan="$(build_subtitle_plan "dummy.mkv")"
+
+  # Internal text should win over external bitmap
+  assert_contains "$plan" "int|0|eng|0|subrip|0"
+  assert_not_contains "$plan" "ext|/ext/eng.sup|eng|0|sup|0"
+}
+
+test_plan_external_bitmap_ignored_when_keep0() {
+  export KEEP_BITMAP_SUBS=0
+
+  probe_internal_subs() {
+    echo ""
+  }
+
+  discover_external_subs() {
+    echo "/ext/eng.sup|eng|0|0|0|sup"
+  }
+
+  local plan
+  plan="$(build_subtitle_plan "dummy.mkv")"
+
+  assert_eq "" "$plan" "Expected empty plan when KEEP_BITMAP_SUBS=0"
 }

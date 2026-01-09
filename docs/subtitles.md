@@ -5,6 +5,10 @@ This document outlines how the Jellyfin Converter handles subtitle selection, me
 ## Sidecar Naming & Discovery
 The converter automatically discovers external subtitle files located in the same directory as the video.
 
+Supported sidecar formats:
+- Text: `.srt`, `.ass`, `.ssa`, `.vtt`
+- Bitmap (only when `KEEP_BITMAP_SUBS=1`): `.sup`, `.idx`+`.sub` pairs
+
 ### Strict Matching Rules
 1.  **Exact Stem Match**: The subtitle filename must start exactly with the video filename (minus extension).
 2.  **Required Tags in Suffix**: If the subtitle file has a suffix (characters between the stem and extension), that suffix **MUST** contain at least one recognized tag (e.g., language like `eng`, `ita`, or flag like `forced`, `sdh`, `default`).
@@ -48,6 +52,38 @@ Selection Plan:
   int|0|eng|0|hdmv_pgs_subtitle|0
 ```
 
+## Deterministic Selection & Scoring
+
+The converter uses a strict scoring system to rank subtitle candidates. Lower scores are better.
+
+### Scoring Factors
+
+1.  **Language Match**: 
+    - Preferred language (first in `SUB_LANGS`): Score + 0
+    - Other allowed languages: Score + 10
+2.  **Source & Codec**:
+    - **External Subtitles**:
+        - If `PREFER_EXTERNAL_SUBS=1` (Default): Score + 0
+        - If `PREFER_EXTERNAL_SUBS=0`: Score + 100
+        - Bitmap sidecars (`.sup`, `.idx`): Score + 200 (and ignored when `KEEP_BITMAP_SUBS=0`)
+    - **Internal Subtitles**:
+        - Text Codec (SRT, ASS, VTT): Score + 100
+        - Bitmap Codec (PGS, VOBSUB): Score + 200
+3.  **Attributes**:
+    - Forced: Score - 5 (Bonus)
+    - Default: Score - 2 (Bonus)
+    - SDH (if `PREFER_SDH=0`): Score + 20 (Penalty)
+
+### Tie-Breaking
+
+If two subtitles have the same score (e.g., an external SRT and an internal SRT when `PREFER_EXTERNAL_SUBS=0`), the tie is broken deterministically:
+1.  **Source Rank**: Internal (0) wins over External (1).
+2.  **ID/Filename**:
+    - Internal: Stream index (e.g., `00003`).
+    - External: Filename (lexicographically sorted).
+
+This ensures that repeated runs always produce the exact same selection order, regardless of filesystem listing order.
+
 ## Configuration Toggles
 
 You can control subtitle behavior using environment variables.
@@ -55,8 +91,8 @@ You can control subtitle behavior using environment variables.
 | Variable | Default | Description |
 | :--- | :--- | :--- |
 | `SUB_LANGS` | `eng,ita` | Comma-separated list of languages to keep. All others (except commentary) are discarded. |
-| `PREFER_EXTERNAL_SUBS` | `1` | If `1`, external subtitles are ranked higher than internal ones. If `0`, they are treated equally (quality/codec decides). |
-| `KEEP_BITMAP_SUBS` | `1` | If `1`, bitmap subtitles (PGS, VOBSUB) are kept. If `0`, they are removed (useful for ensuring Direct Play). |
+| `PREFER_EXTERNAL_SUBS` | `1` | If `1`, external subtitles are prioritized (Score +0). If `0`, they are treated similarly to internal text subs (Score +100), with internal winning ties. |
+| `KEEP_BITMAP_SUBS` | `0` | If `1`, bitmap subtitles are kept (internal PGS/VobSub and external `.sup`, `.idx`+`.sub`). If `0`, they are removed/ignored (useful for ensuring Direct Play). |
 | `PREFER_SDH` | `0` | If `1`, SDH/Hearing Impaired subtitles are preferred. If `0`, standard subtitles are preferred. |
 | `MARK_NORMAL_SUB_DEFAULT` | `1` | If `1`, the best normal subtitle track is flagged as `default`. |
 

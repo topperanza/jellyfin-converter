@@ -148,6 +148,35 @@ get_optimal_crf() {
   fi
 }
 
+# New version that accepts cached probe data
+get_optimal_crf_from_data() {
+  local probe_data="$1"
+  local height=""
+  
+  # Try to get height from first video stream
+  local idxs
+  idxs=$(probe_get_stream_indices "$probe_data" "video")
+  local first_idx
+  first_idx=$(echo "$idxs" | head -n1)
+  
+  if [[ -n "$first_idx" ]]; then
+    height=$(probe_get_stream_val "$probe_data" "$first_idx" "height")
+  fi
+  
+  # Default to 720 if missing
+  [[ -z "$height" || ! "$height" =~ ^[0-9]+$ ]] && height=720
+
+  if [[ "$height" -ge 2160 ]]; then
+    echo 22
+  elif [[ "$height" -ge 1080 ]]; then
+    echo 20
+  elif [[ "$height" -ge 720 ]]; then
+    echo 21
+  else
+    echo 23
+  fi
+}
+
 get_video_bitrate_kbps() {
   local src="$1"
   local bitrate
@@ -160,6 +189,32 @@ get_video_bitrate_kbps() {
       -of default=nw=1:nk=1 "$src" 2>/dev/null || true)
   fi
 
+  if [[ -z "$bitrate" || "$bitrate" == "N/A" || ! "$bitrate" =~ ^[0-9]+$ ]]; then
+    echo 0
+  else
+    echo $((bitrate / 1000))
+  fi
+}
+
+get_video_bitrate_kbps_from_data() {
+  local probe_data="$1"
+  local bitrate=""
+  
+  # Try video stream bitrate first
+  local idxs
+  idxs=$(probe_get_stream_indices "$probe_data" "video")
+  local first_idx
+  first_idx=$(echo "$idxs" | head -n1)
+  
+  if [[ -n "$first_idx" ]]; then
+    bitrate=$(probe_get_stream_val "$probe_data" "$first_idx" "bit_rate")
+  fi
+  
+  # Fallback to format bitrate
+  if [[ -z "$bitrate" || "$bitrate" == "N/A" || ! "$bitrate" =~ ^[0-9]+$ ]]; then
+    bitrate=$(probe_get_format_val "$probe_data" "bit_rate")
+  fi
+  
   if [[ -z "$bitrate" || "$bitrate" == "N/A" || ! "$bitrate" =~ ^[0-9]+$ ]]; then
     echo 0
   else

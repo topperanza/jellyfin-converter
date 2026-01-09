@@ -2,6 +2,7 @@
 source "./scripts/lib/media_filters.sh"
 
 # Mock map_lang if needed (it is in media_filters.sh, so it's fine)
+export KEEP_BITMAP_SUBS=1
 
 run_plan_test() {
   local test_name="$1"
