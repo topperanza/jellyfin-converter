@@ -1,5 +1,10 @@
 # Changelog
 
+## v1.1.0
+- Default scan now excludes output directories and hidden folders.
+- Fix: normalize missing language tags to 'und' (undetermined).
+- CI: Switched to `shellcheck-py` for reproducible linting.
+
 ## v1.0.0
 - Deterministic subtitle selection
 - Strict subtitle sidecar anchoring (safety fix)
