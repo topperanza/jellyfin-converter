@@ -15,7 +15,7 @@ if exists shellcheck; then
   exit 0
 fi
 ROOT="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-SHELLCHECK_PY_VERSION="${SHELLCHECK_PY_VERSION:-0.11.0}"
+SHELLCHECK_PY_VERSION="${SHELLCHECK_PY_VERSION:-0.11.0.1}"
 SHELLCHECK_PY_SPEC="shellcheck-py==${SHELLCHECK_PY_VERSION}"
 PY=""
 if [[ -n "${VIRTUAL_ENV:-}" && -x "$VIRTUAL_ENV/bin/python" ]]; then
