@@ -15,6 +15,8 @@ if exists shellcheck; then
   exit 0
 fi
 ROOT="$(cd -- "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+SHELLCHECK_PY_VERSION="${SHELLCHECK_PY_VERSION:-0.11.0}"
+SHELLCHECK_PY_SPEC="shellcheck-py==${SHELLCHECK_PY_VERSION}"
 PY=""
 if [[ -n "${VIRTUAL_ENV:-}" && -x "$VIRTUAL_ENV/bin/python" ]]; then
   PY="$VIRTUAL_ENV/bin/python"
@@ -31,7 +33,7 @@ fi
 ok=0
 if [[ -n "${VIRTUAL_ENV:-}" ]]; then
   "$PY" -m pip install -U pip >/dev/null 2>&1 || true
-  if "$PY" -m pip install shellcheck-py; then ok=1; fi
+  if "$PY" -m pip install "$SHELLCHECK_PY_SPEC"; then ok=1; fi
   if [[ "$ok" -eq 1 ]]; then
     SC_PATH="$("$PY" - <<'PY'
 import sys, os
@@ -56,7 +58,7 @@ if [[ "$ok" -eq 0 ]]; then
   VPY="$VENV_DIR/bin/python"
   if [[ -x "$VPY" ]]; then
     "$VPY" -m pip install -U pip >/dev/null 2>&1 || true
-    if "$VPY" -m pip install shellcheck-py; then ok=1; fi
+    if "$VPY" -m pip install "$SHELLCHECK_PY_SPEC"; then ok=1; fi
     if [[ -n "${GITHUB_PATH:-}" ]]; then
       printf "%s\n" "$VENV_DIR/bin" >>"$GITHUB_PATH" || true
     fi

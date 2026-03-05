@@ -49,7 +49,7 @@ case "$*" in
     echo "aac"
     ;;
   *-select_streams\ a\ -show_entries\ stream=index:stream_tags=language,title*)
-    echo "0,eng,Main"
+    echo "9,eng,Main"
     ;;
   *-select_streams\ v:0\ -show_entries\ stream=height*)
     echo "1080"

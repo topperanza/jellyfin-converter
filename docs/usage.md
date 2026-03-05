@@ -8,7 +8,9 @@
 - Alternatively, export variables inline before running:
 
 ```bash
-export $(cat .env.local | xargs)   # or export DRY_RUN=1 DELETE=0 ...
+set -a
+source .env.local
+set +a
 ```
 
 ## Running

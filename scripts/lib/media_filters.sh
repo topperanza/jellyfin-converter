@@ -120,276 +120,191 @@ is_bitmap_sidecar_ext() {
   esac
 }
 
-if have_bash_ge_4; then
-  build_audio_map_args() {
-    local audio_info="$1"
-    local -n out_map_args="$2" # bash32-ignore
-    local -n out_russian_tracks="$3" # bash32-ignore
-    local -n out_has_eng_or_ita="$4" # bash32-ignore
-    local -n out_has_non_russian="$5" # bash32-ignore
+set_named_array() {
+  local name="$1"
+  shift
+  case "$name" in
+    audio_map_args) audio_map_args=("$@") ;;
+    russian_tracks) russian_tracks=("$@") ;;
+    sub_inputs) sub_inputs=("$@") ;;
+    sub_langs) sub_langs=("$@") ;;
+    sub_forced) sub_forced=("$@") ;;
+    sub_files) sub_files=("$@") ;;
+    *) echo "ERROR: Unsupported array reference '$name'" >&2; return 1 ;;
+  esac
+}
 
-    out_map_args=()
-    out_russian_tracks=()
-    out_has_eng_or_ita=0
-    out_has_non_russian=0
+append_named_array() {
+  local name="$1"
+  shift
+  case "$name" in
+    audio_map_args) audio_map_args+=("$@") ;;
+    russian_tracks) russian_tracks+=("$@") ;;
+    sub_inputs) sub_inputs+=("$@") ;;
+    sub_langs) sub_langs+=("$@") ;;
+    sub_forced) sub_forced+=("$@") ;;
+    sub_files) sub_files+=("$@") ;;
+    *) echo "ERROR: Unsupported array reference '$name'" >&2; return 1 ;;
+  esac
+}
 
-    local audio_idx=0
-    if [[ -n "$audio_info" ]]; then
-      while IFS=, read -r idx lang title; do
-        [[ -z "$idx" ]] && continue
-        local mapped_lang; mapped_lang=$(map_lang "$lang")
-        local is_commentary=0
-        is_commentary_title "$title" && is_commentary=1
+set_named_scalar() {
+  local name="$1"
+  local value="$2"
+  printf -v "$name" '%s' "$value"
+}
 
-        if [[ "$is_commentary" -eq 1 ]]; then
-          out_map_args+=("-map" "0:$idx")
-          echo "  → Keeping audio track $idx: commentary ($mapped_lang)"
-        elif is_eng_or_ita "$mapped_lang"; then
-          out_map_args+=("-map" "0:$idx")
-          out_has_eng_or_ita=1
-          out_has_non_russian=1
-          echo "  → Keeping audio track $idx: $mapped_lang"
-        elif [[ "$mapped_lang" == "rus" ]]; then
-          out_russian_tracks+=("$idx")
-          echo "  ⚠ Russian track $idx (will skip if other languages available)"
-        elif [[ -n "$mapped_lang" ]]; then
-          out_map_args+=("-map" "0:$idx")
-          out_has_non_russian=1
-          echo "  → Keeping audio track $idx: $mapped_lang (non-Russian)"
-        elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-          echo "DEBUG: ALLOW_UND_AUDIO=${ALLOW_UND_AUDIO}"
-           if [[ "${ALLOW_UND_AUDIO:-0}" -eq 1 ]]; then
-            out_map_args+=("-map" "0:$idx")
-            out_has_non_russian=1
-            echo "  → Keeping audio track $idx: unknown (preserving)"
-          else
-            echo "  × Skipping audio track $idx: unknown (not allowed)"
-          fi
+increment_named_scalar() {
+  local name="$1"
+  local current=0
+  printf -v current '%s' "${!name:-0}"
+  if [[ ! "$current" =~ ^[0-9]+$ ]]; then
+    current=0
+  fi
+  current=$((current + 1))
+  printf -v "$name" '%s' "$current"
+}
+
+build_audio_map_args() {
+  local audio_info="$1"
+  local out_map_args="$2"
+  local out_russian_tracks="$3"
+  local out_has_eng_or_ita="$4"
+  local out_has_non_russian="$5"
+
+  set_named_array "$out_map_args"
+  set_named_array "$out_russian_tracks"
+  set_named_scalar "$out_has_eng_or_ita" "0"
+  set_named_scalar "$out_has_non_russian" "0"
+
+  if [[ -n "$audio_info" ]]; then
+    while IFS=, read -r idx lang title; do
+      [[ -z "$idx" ]] && continue
+      local mapped_lang; mapped_lang=$(map_lang "$lang")
+      local is_commentary=0
+      is_commentary_title "$title" && is_commentary=1
+
+      if [[ "$is_commentary" -eq 1 ]]; then
+        append_named_array "$out_map_args" "-map" "0:$idx"
+        echo "  → Keeping audio track $idx: commentary ($mapped_lang)"
+      elif is_eng_or_ita "$mapped_lang"; then
+        append_named_array "$out_map_args" "-map" "0:$idx"
+        set_named_scalar "$out_has_eng_or_ita" "1"
+        set_named_scalar "$out_has_non_russian" "1"
+        echo "  → Keeping audio track $idx: $mapped_lang"
+      elif [[ "$mapped_lang" == "rus" ]]; then
+        append_named_array "$out_russian_tracks" "$idx"
+        echo "  ⚠ Russian track $idx (will skip if other languages available)"
+      elif [[ -n "$mapped_lang" ]]; then
+        append_named_array "$out_map_args" "-map" "0:$idx"
+        set_named_scalar "$out_has_non_russian" "1"
+        echo "  → Keeping audio track $idx: $mapped_lang (non-Russian)"
+      elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
+        if [[ "${ALLOW_UND_AUDIO:-0}" -eq 1 ]]; then
+          append_named_array "$out_map_args" "-map" "0:$idx"
+          set_named_scalar "$out_has_non_russian" "1"
+          echo "  → Keeping audio track $idx: unknown (preserving)"
+        else
+          echo "  × Skipping audio track $idx: unknown (not allowed)"
         fi
-        ((audio_idx+=1))
-      done <<< "$audio_info" || true
-    fi
+      fi
+    done <<< "$audio_info" || true
+  fi
 
-    return 0
-  }
+  return 0
+}
 
-  finalize_audio_selection() {
-    local -n _audio_map_args="$1" # bash32-ignore
-    local -n _russian_tracks="$2" # bash32-ignore
-    local has_eng_or_ita="$3"
-    local has_non_russian="$4"
+finalize_audio_selection() {
+  local audio_map_ref="$1"
+  local russian_tracks_ref="$2"
+  local has_eng_or_ita="$3"
+  local has_non_russian="$4"
+  local -a rus_tracks=()
 
-    if [[ "$has_eng_or_ita" -eq 0 && "$has_non_russian" -eq 0 && "${#_russian_tracks[@]}" -gt 0 ]]; then
-      echo "  → No non-Russian audio found, keeping Russian track(s) as fallback"
-      for rus_idx in "${_russian_tracks[@]}"; do
-        _audio_map_args+=("-map" "0:$rus_idx")
-        echo "  → Keeping audio track $rus_idx: rus (fallback)"
-      done
-    elif [[ "${#_russian_tracks[@]}" -gt 0 && "$has_non_russian" -eq 1 ]]; then
-      for rus_idx in "${_russian_tracks[@]}"; do
-        echo "  × Skipping audio track $rus_idx: rus (other languages available)"
-      done
-    fi
+  case "$russian_tracks_ref" in
+    russian_tracks)
+      # shellcheck disable=SC2206
+      rus_tracks=(${russian_tracks[@]-})
+      ;;
+    *) echo "ERROR: Unsupported array reference '$russian_tracks_ref'" >&2; return 1 ;;
+  esac
 
-    if [[ "${#_audio_map_args[@]}" -eq 0 ]]; then
-      echo "  → No audio tracks selected, keeping all audio tracks"
-      _audio_map_args=("-map" "0:a?")
-    fi
-  }
-
-  collect_subtitle() {
-    local subfile="$1"
-    local base="$2"
-    local _sub_inputs="$3"
-    local _sub_langs="$4"
-    local _sub_forced="$5"
-    local _sub_files="$6"
-    local _sub_idx="$7"
-
-    local fname; fname="$(basename "$subfile")"
-    # Remove the base filename prefix
-    local rest="${fname#"${base}"}"
-    # Remove extension
-    rest="${rest%.*}"
-    
-    local lang="" forced=0
-
-    local rest_lower="$rest"
-    rest_lower="$(to_lower "$rest_lower")"
-    local is_commentary=0
-    is_commentary_title "$rest_lower" && is_commentary=1
-
-    # Split by common delimiters: dot, underscore, dash, space, parens, brackets
-    IFS='._- ()[]' read -r -a tokens <<< "$rest"
-    for tk in "${tokens[@]}"; do
-      [[ -z "$tk" ]] && continue
-      [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
-      [[ "$tk" =~ ^(forced|forzato|forzati|zwangs|obligatoire)$ ]] && forced=1
+  if [[ "$has_eng_or_ita" -eq 0 && "$has_non_russian" -eq 0 && "${#rus_tracks[@]}" -gt 0 ]]; then
+    echo "  → No non-Russian audio found, keeping Russian track(s) as fallback"
+    local rus_idx
+    for rus_idx in "${rus_tracks[@]}"; do
+      append_named_array "$audio_map_ref" "-map" "0:$rus_idx"
+      echo "  → Keeping audio track $rus_idx: rus (fallback)"
     done
-
-    local should_add=0
-    local target_lang="${lang:-und}"
-
-    if [[ "$is_commentary" -eq 1 ]]; then
-      echo "  + sub: $subfile  commentary lang=$target_lang forced=$forced"
-      should_add=1
-    elif is_eng_or_ita "$lang"; then
-      target_lang="$lang"
-      echo "  + sub: $subfile  lang=$target_lang forced=$forced"
-      should_add=1
-    else
-      echo "  × skipping sub: $subfile  lang=${lang:-unknown} (not eng/ita/commentary)"
-    fi
-
-    if [[ "$should_add" -eq 1 ]]; then
-      local safe_subfile safe_lang safe_forced
-      printf -v safe_subfile %q "$subfile"
-      printf -v safe_lang %q "$target_lang"
-      printf -v safe_forced %q "$forced"
-
-      eval "${_sub_inputs}+=(\"-i\" $safe_subfile)"
-      eval "${_sub_langs}+=($safe_lang)"
-      eval "${_sub_forced}+=($safe_forced)"
-      eval "${_sub_files}+=($safe_subfile)"
-      eval "${_sub_idx}=\$((\${${_sub_idx}} + 1))"
-    fi
-  }
-else
-  # shellcheck disable=SC2128,SC2178,SC2154
-  build_audio_map_args() {
-    local audio_info="$1"
-    local out_map_args="$2"
-    local out_russian_tracks="$3"
-    local out_has_eng_or_ita="$4"
-    local out_has_non_russian="$5"
-
-    eval "$out_map_args=()"
-    eval "$out_russian_tracks=()"
-    eval "$out_has_eng_or_ita=0"
-    eval "$out_has_non_russian=0"
-
-    local audio_idx=0
-    if [[ -n "$audio_info" ]]; then
-      while IFS=, read -r idx lang title; do
-        [[ -z "$idx" ]] && continue
-        local mapped_lang; mapped_lang=$(map_lang "$lang")
-        local is_commentary=0
-        is_commentary_title "$title" && is_commentary=1
-
-        if [[ "$is_commentary" -eq 1 ]]; then
-          eval "$out_map_args+=(\"-map\" \"0:$idx\")"
-          echo "  → Keeping audio track $idx: commentary ($mapped_lang)"
-        elif is_eng_or_ita "$mapped_lang"; then
-          eval "$out_map_args+=(\"-map\" \"0:$idx\")"
-          eval "$out_has_eng_or_ita=1"
-          eval "$out_has_non_russian=1"
-          echo "  → Keeping audio track $idx: $mapped_lang"
-        elif [[ "$mapped_lang" == "rus" ]]; then
-          eval "$out_russian_tracks+=(\"$idx\")"
-          echo "  ⚠ Russian track $idx (will skip if other languages available)"
-        elif [[ -n "$mapped_lang" ]]; then
-          eval "$out_map_args+=(\"-map\" \"0:$idx\")"
-          eval "$out_has_non_russian=1"
-          echo "  → Keeping audio track $idx: $mapped_lang (non-Russian)"
-        elif [[ -z "$mapped_lang" || "$lang" == "und" ]]; then
-           if [[ "${ALLOW_UND_AUDIO:-0}" -eq 1 ]]; then
-             eval "$out_map_args+=(\"-map\" \"0:$idx\")"
-            eval "$out_has_non_russian=1"
-            echo "  → Keeping audio track $idx: unknown (preserving)"
-          else
-            echo "  × Skipping audio track $idx: unknown (not allowed)"
-          fi
-        fi
-        ((audio_idx+=1))
-      done <<< "$audio_info" || true
-    fi
-
-    return 0
-  }
-
-  # shellcheck disable=SC2128,SC2178,SC2154
-  finalize_audio_selection() {
-    local _audio_map_args="$1"
-    local _russian_tracks="$2"
-    local has_eng_or_ita="$3"
-    local has_non_russian="$4"
-
-    eval "local rus_len=\${#${_russian_tracks}[@]}"
-    if [[ "$has_eng_or_ita" -eq 0 && "$has_non_russian" -eq 0 && "$rus_len" -gt 0 ]]; then
-      echo "  → No non-Russian audio found, keeping Russian track(s) as fallback"
-      eval "local rus_tracks=(\"\${${_russian_tracks}[@]}\")"
-      for rus_idx in "${rus_tracks[@]}"; do
-        eval "${_audio_map_args}+=(\"-map\" \"0:${rus_idx}\")"
-        echo "  → Keeping audio track ${rus_idx}: rus (fallback)"
-      done
-    elif [[ "$rus_len" -gt 0 && "$has_non_russian" -eq 1 ]]; then
-      eval "local rus_tracks_skip=(\"\${${_russian_tracks}[@]}\")"
-      for rus_idx in "${rus_tracks_skip[@]}"; do
-        echo "  × Skipping audio track ${rus_idx}: rus (other languages available)"
-      done
-    fi
-
-    eval "local map_len=\${#${_audio_map_args}[@]}"
-    if [[ "$map_len" -eq 0 ]]; then
-      echo "  → No audio tracks selected, keeping all audio tracks"
-      eval "${_audio_map_args}=(\"-map\" \"0:a?\")"
-    fi
-  }
-
-  collect_subtitle() {
-    local subfile="$1"
-    local base="$2"
-    local _sub_inputs="$3"
-    local _sub_langs="$4"
-    local _sub_forced="$5"
-    local _sub_files="$6"
-    local _sub_idx="$7"
-
-    local fname; fname="$(basename "$subfile")"
-    # Remove the base filename prefix
-    local rest="${fname#"${base}"}"
-    # Remove extension
-    rest="${rest%.*}"
-    
-    local lang="" forced=0
-
-    local rest_lower="$rest"
-    rest_lower="$(to_lower "$rest_lower")"
-    local is_commentary=0
-    is_commentary_title "$rest_lower" && is_commentary=1
-
-    # Split by common delimiters: dot, underscore, dash, space, parens, brackets, quotes
-    # Note: We use mixed quoting to include both single and double quotes in IFS
-    IFS='._- ()[]"'"'" read -r -a tokens <<< "$rest"
-    for tk in "${tokens[@]}"; do
-      [[ -z "$tk" ]] && continue
-      [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
-      [[ "$tk" =~ ^(forced|forzato|forzati|zwangs|obligatoire)$ ]] && forced=1
+  elif [[ "${#rus_tracks[@]}" -gt 0 && "$has_non_russian" -eq 1 ]]; then
+    local rus_idx
+    for rus_idx in "${rus_tracks[@]}"; do
+      echo "  × Skipping audio track $rus_idx: rus (other languages available)"
     done
+  fi
 
-    if [[ "$is_commentary" -eq 1 ]]; then
-      echo "  + sub: $subfile  commentary lang=${lang:-unknown} forced=$forced"
-      printf -v safe_subfile %q "$subfile"
-      printf -v safe_lang %q "${lang:-und}"
-      eval "${_sub_inputs}+=(\"-i\" $safe_subfile)"
-      eval "${_sub_langs}+=($safe_lang)"
-      eval "${_sub_forced}+=(\"$forced\")"
-      eval "${_sub_files}+=($safe_subfile)"
-      eval "$_sub_idx=$((_sub_idx+1))"
-    elif is_eng_or_ita "$lang"; then
-      echo "  + sub: $subfile  lang=$lang forced=$forced"
-      printf -v safe_subfile %q "$subfile"
-      printf -v safe_lang %q "$lang"
-      eval "${_sub_inputs}+=(\"-i\" $safe_subfile)"
-      eval "${_sub_langs}+=($safe_lang)"
-      eval "${_sub_forced}+=(\"$forced\")"
-      eval "${_sub_files}+=($safe_subfile)"
-      eval "$_sub_idx=$((_sub_idx+1))"
-    else
-      echo "  × skipping sub: $subfile  lang=${lang:-unknown} (not eng/ita/commentary)"
-    fi
-  }
-fi
+  case "$audio_map_ref" in
+    audio_map_args)
+      if [[ "${audio_map_args+x}" != "x" || "${#audio_map_args[@]}" -eq 0 ]]; then
+        echo "  → No audio tracks selected, keeping all audio tracks"
+        audio_map_args=("-map" "0:a?")
+      fi
+      ;;
+    *)
+      echo "ERROR: Unsupported array reference '$audio_map_ref'" >&2
+      return 1
+      ;;
+  esac
+}
+
+collect_subtitle() {
+  local subfile="$1"
+  local base="$2"
+  local sub_inputs_ref="$3"
+  local sub_langs_ref="$4"
+  local sub_forced_ref="$5"
+  local sub_files_ref="$6"
+  local sub_idx_ref="$7"
+
+  local fname; fname="$(basename "$subfile")"
+  local rest="${fname#"${base}"}"
+  rest="${rest%.*}"
+
+  local lang="" forced=0
+  local rest_lower="$rest"
+  rest_lower="$(to_lower "$rest_lower")"
+  local is_commentary=0
+  is_commentary_title "$rest_lower" && is_commentary=1
+
+  IFS='._- ()[]' read -r -a tokens <<< "$rest"
+  local tk
+  for tk in "${tokens[@]}"; do
+    [[ -z "$tk" ]] && continue
+    [[ -z "$lang" ]] && lang="$(map_lang "$tk")"
+    [[ "$tk" =~ ^(forced|forzato|forzati|zwangs|obligatoire)$ ]] && forced=1
+  done
+
+  local should_add=0
+  local target_lang="${lang:-und}"
+  if [[ "$is_commentary" -eq 1 ]]; then
+    echo "  + sub: $subfile  commentary lang=$target_lang forced=$forced"
+    should_add=1
+  elif is_eng_or_ita "$lang"; then
+    target_lang="$lang"
+    echo "  + sub: $subfile  lang=$target_lang forced=$forced"
+    should_add=1
+  else
+    echo "  × skipping sub: $subfile  lang=${lang:-unknown} (not eng/ita/commentary)"
+  fi
+
+  if [[ "$should_add" -eq 1 ]]; then
+    append_named_array "$sub_inputs_ref" "-i" "$subfile"
+    append_named_array "$sub_langs_ref" "$target_lang"
+    append_named_array "$sub_forced_ref" "$forced"
+    append_named_array "$sub_files_ref" "$subfile"
+    increment_named_scalar "$sub_idx_ref"
+  fi
+}
 
 SUBTITLE_SELECTION_MAP_ARGS=()
 SUBTITLE_INTERNAL_COUNT=0
@@ -635,6 +550,9 @@ build_subtitle_plan() {
   local internal_raw
   if [[ -n "$probe_data" ]]; then
     internal_raw="$(probe_internal_subs_from_data "$probe_data")"
+    if [[ -z "$internal_raw" ]]; then
+      internal_raw="$(probe_internal_subs "$video")"
+    fi
   else
     internal_raw="$(probe_internal_subs "$video")"
   fi
@@ -649,6 +567,7 @@ build_subtitle_plan() {
   if [[ -n "$internal_raw" ]]; then
     while IFS='|' read -r idx codec lang title def forced sdh; do
       [[ -z "$idx" ]] && continue
+      [[ "$idx" =~ ^[0-9]+$ ]] || continue
       local mapped_lang; mapped_lang="$(map_lang "$lang")"
       [[ -z "$mapped_lang" ]] && mapped_lang="$(normalize_lang "$lang")"
       local is_comm=0; is_commentary_title "$title" && is_comm=1

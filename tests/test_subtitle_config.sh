@@ -57,7 +57,7 @@ export LOG_DIR="$TMP_ROOT/logs"
 
 # Test 1: SUB_LANGS filtering
 # Input has Eng, Spa, Rus.
-# Default SUB_LANGS=eng,ita -> Should keep Eng (Normal), drop Spa, drop Rus.
+# Default SUB_LANGS=eng,ita with KEEP_BITMAP_SUBS=0 -> bitmap Eng should be dropped.
 T1_DIR="$WORKDIR/t1"
 mkdir -p "$T1_DIR"
 printf 'dummy' >"$T1_DIR/test1.mkv"
@@ -69,8 +69,8 @@ if ! "$ROOT/run.sh" "$T1_DIR" > "$T1_DIR/test1.log" 2>&1; then
 fi
 cmd1="$(grep "test1.mkv" "$FFMPEG_CALLS" | tail -n1)"
 
-if [[ "$cmd1" != *"-map 0:2"* ]]; then
-  echo "FAIL T1: Missing Eng PGS (0:2)"
+if [[ "$cmd1" == *"-map 0:2"* ]]; then
+  echo "FAIL T1: Bitmap Eng should be dropped by default"
   exit 1
 fi
 if [[ "$cmd1" == *"-map 0:3"* ]]; then

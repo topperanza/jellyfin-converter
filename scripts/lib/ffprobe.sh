@@ -18,21 +18,22 @@ probe_get_stream_val() {
   local data="$1"
   local idx="$2"
   local key="$3"
-  
-  # Search for line: streams.stream.<idx>.<key>=...
-  # We rely on grep. 
+
+  local prefix="streams.stream.${idx}.${key}="
   local line
-  line=$(echo "$data" | grep -F "streams.stream.${idx}.${key}=")
-  
-  if [[ -n "$line" ]]; then
-    local val="${line#*=}"
-    # Strip quotes if present (both " and ')
-    val="${val%\"}"
-    val="${val#\"}"
-    echo "$val"
-  else
-    echo ""
-  fi
+  while IFS= read -r line; do
+    case "$line" in
+      "$prefix"*)
+        local val="${line#*=}"
+        val="${val%\"}"
+        val="${val#\"}"
+        echo "$val"
+        return 0
+        ;;
+    esac
+  done <<< "$data"
+
+  echo ""
 }
 
 # Extract a format value
@@ -40,18 +41,22 @@ probe_get_stream_val() {
 probe_get_format_val() {
   local data="$1"
   local key="$2"
-  
+
+  local prefix="format.${key}="
   local line
-  line=$(echo "$data" | grep -F "format.${key}=")
-  
-  if [[ -n "$line" ]]; then
-    local val="${line#*=}"
-    val="${val%\"}"
-    val="${val#\"}"
-    echo "$val"
-  else
-    echo ""
-  fi
+  while IFS= read -r line; do
+    case "$line" in
+      "$prefix"*)
+        local val="${line#*=}"
+        val="${val%\"}"
+        val="${val#\"}"
+        echo "$val"
+        return 0
+        ;;
+    esac
+  done <<< "$data"
+
+  echo ""
 }
 
 # Get list of stream indices for a specific codec type
@@ -59,8 +64,18 @@ probe_get_format_val() {
 probe_get_stream_indices() {
   local data="$1"
   local type="$2"
-  
-  # streams.stream.0.codec_type="video"
-  # Extract the index number
-  echo "$data" | grep -F "codec_type=\"${type}\"" | sed -n 's/streams\.stream\.\([0-9]*\)\.codec_type.*/\1/p'
+
+  local needle=".codec_type=\"${type}\""
+  local line
+  while IFS= read -r line; do
+    case "$line" in
+      streams.stream.*"$needle")
+        local rest="${line#streams.stream.}"
+        local idx="${rest%%.*}"
+        if [[ "$idx" =~ ^[0-9]+$ ]]; then
+          echo "$idx"
+        fi
+        ;;
+    esac
+  done <<< "$data"
 }

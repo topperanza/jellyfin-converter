@@ -12,13 +12,13 @@ jobs:
         os: [ubuntu-latest, macos-latest]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
       - name: Show Bash version
         run: bash --version
 
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
         with:
           python-version: '3.12'
 
@@ -33,7 +33,7 @@ jobs:
         run: shellcheck --version
 
       - name: Install ffmpeg
-        uses: federico-busato/setup-ffmpeg@v2
+        uses: federicocarboni/setup-ffmpeg@37062fbf7149fc5578d6c57e08aed62458b375d6 # v3.1
         with:
           ffmpeg-version: release
 
@@ -52,6 +52,10 @@ jobs:
             -not -path "./.git/*" \
             -not -path "./.venv/*" \
             -print0 | xargs -0 shellcheck -x -S error
+
+      - name: Check Bash 3.2 compatibility
+        run: |
+          ./scripts/check_bash32.sh
 
       - name: Run Tests
         run: |

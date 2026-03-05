@@ -140,6 +140,7 @@ configure_policy_defaults() {
     "$DEFAULT_HW_ACCEL"
     "$DEFAULT_OVERWRITE"
     "$DEFAULT_DELETE"
+    "$DEFAULT_DELETE_SIDECARS"
     "$DEFAULT_PARALLEL"
     "$DEFAULT_DRY_RUN"
     "$DEFAULT_SKIP_DELETE_CONFIRM"
@@ -191,6 +192,7 @@ PARALLEL="${PARALLEL:-$DEFAULT_PARALLEL}"     # Number of simultaneous conversio
 DRY_RUN="${DRY_RUN:-$DEFAULT_DRY_RUN}"       # 1 to test without converting
 SKIP_DELETE_CONFIRM="${SKIP_DELETE_CONFIRM:-$DEFAULT_SKIP_DELETE_CONFIRM}"  # 1 to skip delete confirmation (for automation)
 PREFLIGHT_MODE="${PREFLIGHT_MODE:-off}" # off|info|strict
+PRINT_SUBTITLES="${PRINT_SUBTITLES:-$DEFAULT_PRINT_SUBTITLES}"
 INCLUDE_HIDDEN="${INCLUDE_HIDDEN:-$DEFAULT_INCLUDE_HIDDEN}" # 1 to include hidden files/dirs
 
 resolve_outroot() {
@@ -236,11 +238,13 @@ report_env_overrides() {
       HW_ACCEL) current="$HW_ACCEL" ;;
       OVERWRITE) current="$OVERWRITE" ;;
       DELETE) current="$DELETE" ;;
+      DELETE_SIDECARS) current="$DELETE_SIDECARS" ;;
       PARALLEL) current="$PARALLEL" ;;
       DRY_RUN) current="$DRY_RUN" ;;
       SKIP_DELETE_CONFIRM) current="$SKIP_DELETE_CONFIRM" ;;
       OUTROOT) current="$OUTROOT" ;;
       LOG_DIR) current="$LOG_DIR" ;;
+      PRINT_SUBTITLES) current="$PRINT_SUBTITLES" ;;
       INCLUDE_HIDDEN) current="$INCLUDE_HIDDEN" ;;
       *) current="" ;;
     esac

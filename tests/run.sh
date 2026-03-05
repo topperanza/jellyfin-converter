@@ -111,6 +111,19 @@ run_suite() {
   fi
 }
 
+run_script() {
+  local script_file="$1"
+  ((SUITES_RUN+=1))
+  echo "Running script: $script_file"
+  if bash "$script_file"; then
+    return 0
+  else
+    local status=$?
+    echo "Script failed: $script_file (exit code $status)"
+    ((SUITES_FAILED+=1))
+  fi
+}
+
 run_test_cmd() {
   local cmd="$1"
   if ! $cmd; then
@@ -133,7 +146,11 @@ main() {
   for f in $pattern; do
     if [[ -f "$f" ]]; then
       found_files=1
-      run_suite "$f"
+      case "$(basename "$f")" in
+        suite_*.sh) run_suite "$f" ;;
+        test_*.sh) run_script "$f" ;;
+        *) run_suite "$f" ;;
+      esac
     fi
   done
 

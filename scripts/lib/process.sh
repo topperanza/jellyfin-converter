@@ -49,6 +49,50 @@ is_sidecar_safe_to_delete() {
   return 0
 }
 
+done_file_lock_acquire() {
+  local lock_dir="${DONE_FILE}.lock"
+  local retries=200
+
+  while (( retries > 0 )); do
+    if mkdir "$lock_dir" 2>/dev/null; then
+      return 0
+    fi
+    sleep 0.05
+    ((retries-=1))
+  done
+
+  echo "ERROR: Timed out acquiring processed-file lock: $lock_dir" >&2
+  return 1
+}
+
+done_file_lock_release() {
+  local lock_dir="${DONE_FILE}.lock"
+  rmdir "$lock_dir" 2>/dev/null || true
+}
+
+is_done_file_processed() {
+  local src="$1"
+
+  done_file_lock_acquire || return 1
+  local processed=1
+  if grep -Fxq "$src" "$DONE_FILE" 2>/dev/null; then
+    processed=0
+  fi
+  done_file_lock_release
+
+  return "$processed"
+}
+
+mark_done_file_processed() {
+  local src="$1"
+
+  done_file_lock_acquire || return 1
+  if ! grep -Fxq "$src" "$DONE_FILE" 2>/dev/null; then
+    echo "$src" >> "$DONE_FILE"
+  fi
+  done_file_lock_release
+}
+
 process_one() {
   local src="$1"
   # shellcheck disable=SC2034
@@ -60,7 +104,6 @@ process_one() {
   local -a russian_tracks=()
   local has_eng_or_ita=0
   local has_non_russian=0
-  local -a sub_inputs=() sub_files=()
   local rel="${src#"$SCAN_DIR"/}"
   local srcdir; srcdir="$(dirname "$rel")"
   local filename; filename="$(basename "$rel")"
@@ -79,7 +122,7 @@ process_one() {
   fi
 
   # Skip if already processed
-  if grep -Fxq "$src" "$DONE_FILE" 2>/dev/null; then
+  if is_done_file_processed "$src"; then
     echo "Skip (already processed): $src"
     return 0
   fi
@@ -108,12 +151,20 @@ process_one() {
      [[ -z "$vcodec" ]] && vcodec="unknown"
      height="$(probe_get_stream_val "$probe_data" "$vid_idx" "height")"
      [[ -z "$height" ]] && height="?"
+  else
+     vcodec="$(ffprobe -v error -select_streams v:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "unknown")"
+     [[ -z "$vcodec" || "$vcodec" == "N/A" ]] && vcodec="unknown"
+     height="$(ffprobe -v error -select_streams v:0 -show_entries stream=height -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "?")"
+     [[ -z "$height" || "$height" == "N/A" ]] && height="?"
   fi
 
   local aud_idx; aud_idx="$(probe_get_stream_indices "$probe_data" "audio" | head -n1)"
   if [[ -n "$aud_idx" ]]; then
      acodec="$(probe_get_stream_val "$probe_data" "$aud_idx" "codec_name")"
      [[ -z "$acodec" ]] && acodec="none"
+  else
+     acodec="$(ffprobe -v error -select_streams a:0 -show_entries stream=codec_name -of default=nw=1:nk=1 "$src" 2>/dev/null || echo "none")"
+     [[ -z "$acodec" || "$acodec" == "N/A" ]] && acodec="none"
   fi
   
   echo "Video: $vcodec (${height}p) | Audio: $acodec"
@@ -144,6 +195,18 @@ process_one() {
       # Construct CSV line: index,lang,title
       audio_info+="${abs_idx},${lang},${title}"$'\n'
     done
+  else
+    # Legacy fallback for environments that do not expose flat batch stream fields.
+    local legacy_audio
+    legacy_audio="$(ffprobe -v error -select_streams a -show_entries stream=index:stream_tags=language,title -of csv=p=0 "$src" 2>/dev/null || true)"
+    if [[ -n "$legacy_audio" ]]; then
+      while IFS=, read -r abs_idx lang title; do
+        [[ -z "$abs_idx" ]] && continue
+        [[ -z "$lang" ]] && lang="und"
+        lang="$(normalize_lang "$lang")"
+        audio_info+="${abs_idx},${lang},${title}"$'\n'
+      done <<< "$legacy_audio"
+    fi
   fi
 
   build_audio_map_args "$audio_info" audio_map_args russian_tracks has_eng_or_ita has_non_russian
@@ -243,6 +306,9 @@ process_one() {
   # Remux vs transcode policy evaluation
   local video_bitrate_kbps filesize_mb height_num height_display
   video_bitrate_kbps=$(get_video_bitrate_kbps_from_data "$probe_data")
+  if [[ "$video_bitrate_kbps" -eq 0 ]]; then
+    video_bitrate_kbps=$(get_video_bitrate_kbps "$src")
+  fi
   filesize_mb=$(get_filesize_mb "$src")
   height_num=0
   [[ "$height" =~ ^[0-9]+$ ]] && height_num="$height"
@@ -346,7 +412,7 @@ process_one() {
           echo "✓ Deleted originals"
         fi
         
-        echo "$src" >> "$DONE_FILE"
+        mark_done_file_processed "$src"
         return 0
       else
         echo "✗ Output validation failed, removing bad file"
@@ -509,7 +575,7 @@ process_one() {
         echo "✓ Deleted originals"
       fi
       
-      echo "$src" >> "$DONE_FILE"
+      mark_done_file_processed "$src"
       return 0
     else
       echo "✗ Output validation failed!"
