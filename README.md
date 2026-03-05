@@ -9,6 +9,7 @@ Current version: see `VERSION` or run `./run.sh --version`.
 
 - [User Guide](docs/user-guide.md)
 - [Subtitle Policy & Configuration](docs/subtitles.md)
+- [Security Policy](SECURITY.md)
 
 ## Requirements
 - macOS (tested with recent releases)
