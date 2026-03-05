@@ -21,7 +21,7 @@ Stable local CLI for converting common video files into Jellyfin-friendly MKV co
 ## Install (GitHub release assets)
 ```bash
 curl -fsSL https://raw.githubusercontent.com/mt/jellyfin-converter/main/install.sh | \
-  bash -s -- --version v1.1.0
+  bash -s -- --version v1.0.0
 ```
 
 By default installer chooses `/usr/local` when writable, otherwise user-local paths.
