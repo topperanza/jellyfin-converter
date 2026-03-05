@@ -1,0 +1,66 @@
+name: Release Dry Run
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Validate docs and pinning gates
+        run: |
+          ./scripts/validate_release_docs.sh
+          ./scripts/check_action_pinning.sh
+
+      - name: Build release package
+        run: |
+          ./scripts/package_release.sh ./dist
+
+      - name: Validate checksums manifest
+        run: |
+          test -f ./dist/checksums.txt
+          grep -q "release.tar.gz" ./dist/checksums.txt
+          grep -q "install.sh" ./dist/checksums.txt
+          grep -q "VERSION" ./dist/checksums.txt
+          grep -q "CHANGELOG.md" ./dist/checksums.txt
+
+      - name: Validate tarball content
+        run: |
+          tar -tzf ./dist/release.tar.gz >/dev/null
+
+      - name: Packaging tests
+        run: |
+          ./tests/test_release_packaging.sh
+          ./tests/test_install_checksum_failure.sh
+
+  installer-validation:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install ffmpeg (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Install ffmpeg (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          brew update
+          brew install ffmpeg
+
+      - name: Build release package
+        run: |
+          ./scripts/package_release.sh ./dist
+
+      - name: Validate installer in clean path
+        run: |
+          ./scripts/validate_installer.sh ./dist

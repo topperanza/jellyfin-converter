@@ -55,6 +55,8 @@ DEFAULT_SKIP_DELETE_CONFIRM=0
 DEFAULT_PROFILE="jellyfin-1080p"
 DEFAULT_PRINT_SUBTITLES=0
 DEFAULT_INCLUDE_HIDDEN=0
+DEFAULT_SELF_CHECK=0
+SELF_CHECK_ONLY="${SELF_CHECK_ONLY:-$DEFAULT_SELF_CHECK}"
 
 PROFILE="${PROFILE:-$DEFAULT_PROFILE}"
 FORCE_TRANSCODE="${FORCE_TRANSCODE:-}"
@@ -168,12 +170,24 @@ Options:
   --allow-und-audio          Keep audio tracks with undefined language
   --print-subtitles          Debug: Print subtitle inventory and selection plan
   --dry-run                  Preview actions without writing outputs (default)
+  --self-check               Validate runtime dependencies and config, then exit
   --version                  Show script version and exit
   -h, --help                 Show this help message and exit
 
 Defaults:
   Profile=$DEFAULT_PROFILE (transcode-first)
   DRY_RUN=$DEFAULT_DRY_RUN DELETE=$DEFAULT_DELETE OUTROOT="$DEFAULT_OUTROOT" LOG_DIR="$DEFAULT_LOG_DIR"
+EOF
+}
+
+print_exit_codes() {
+  cat <<EOF
+Exit codes:
+  0  Success
+  1  Usage/config/dependency error
+  2  User cancelled destructive action
+  3  Filesystem permissions/log/output path failure
+  4  Strict preflight validation failure
 EOF
 }
 
@@ -380,6 +394,10 @@ while [[ $# -gt 0 ]]; do
       echo "jellyfin_converter v$SCRIPT_VERSION"
       exit 0
       ;;
+    --self-check)
+      SELF_CHECK_ONLY=1
+      shift
+      ;;
     --preflight)
       PREFLIGHT_MODE="info"
       shift
@@ -432,18 +450,39 @@ if [[ -z "${SCAN_DIR:-}" && "$#" -gt 0 ]]; then
   shift
 fi
 
-if [[ -n "${SCAN_DIR:-}" ]]; then
-  if [[ ! -d "$SCAN_DIR" ]]; then
-    echo "ERROR: Directory does not exist: $SCAN_DIR"
-    exit 1
+if [[ "$SELF_CHECK_ONLY" == "0" ]]; then
+  if [[ -n "${SCAN_DIR:-}" ]]; then
+    if [[ ! -d "$SCAN_DIR" ]]; then
+      echo "ERROR: Directory does not exist: $SCAN_DIR"
+      exit 1
+    fi
+    SCAN_DIR=$(cd "$SCAN_DIR" && pwd)
+  else
+    select_folder
   fi
-  SCAN_DIR=$(cd "$SCAN_DIR" && pwd)
-else
-  select_folder
 fi
 
 configure_policy_defaults
+if [[ -z "${SCAN_DIR:-}" ]]; then
+  SCAN_DIR="$(pwd)"
+fi
 resolve_outroot
+
+if [[ "$SELF_CHECK_ONLY" == "1" ]]; then
+  LOGFILE="$LOG_DIR/conversion.log"
+  DONE_FILE="$LOG_DIR/.processed"
+  mkdir -p "$OUTROOT_PATH" "$LOG_DIR"
+  check_write_permissions
+  preflight_hw_encoder
+  echo "jellyfin_converter v$SCRIPT_VERSION"
+  echo "Self-check: OK"
+  echo "Scan root: $SCAN_DIR"
+  echo "Output root: $OUTROOT_PATH"
+  echo "Log dir: $LOG_DIR"
+  echo "HW encoder: $(detect_hw_accel)"
+  print_exit_codes
+  exit 0
+fi
 
 # Now set up log files after SCAN_DIR is determined
 LOGFILE="$LOG_DIR/conversion.log"

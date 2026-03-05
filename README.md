@@ -1,86 +1,68 @@
-# Jellyfin Converter (alpha)
+# Jellyfin Converter
 
 ![CI](https://github.com/mt/jellyfin-converter/actions/workflows/ci.yml/badge.svg)
 
-Converts common video files into Jellyfin-friendly MKV containers with conservative defaults and safety checks.
-Current version: see `VERSION` or run `./run.sh --version`.
+Stable local CLI for converting common video files into Jellyfin-friendly MKV containers with conservative defaults and safety controls.
 
 ## Documentation
 
+- [CLI Contract v1](docs/cli-contract-v1.md)
+- [Compatibility Matrix](docs/compatibility-matrix.md)
 - [User Guide](docs/user-guide.md)
 - [Subtitle Policy & Configuration](docs/subtitles.md)
 - [Security Policy](SECURITY.md)
 
-## Requirements
-- macOS (tested with recent releases)
+## Supported platforms
+- macOS and Linux (both release-blocking in CI)
+- Bash 3.2+
 - `ffmpeg`, `ffprobe`, `find`, `df` on `PATH`
 - Optional: `gnu-parallel` for faster runs
 
-## How to run
+## Install (GitHub release assets)
 ```bash
-git clone <repo>
-cd jellyfin-converter
-chmod +x run.sh
+curl -fsSL https://raw.githubusercontent.com/mt/jellyfin-converter/main/install.sh | \
+  bash -s -- --version v1.1.0
+```
+
+By default installer chooses `/usr/local` when writable, otherwise user-local paths.
+
+Installed binary:
+```bash
+jellyfin-converter --version
+jellyfin-converter --self-check
+```
+
+## Local repo usage
+```bash
 ./run.sh --dry-run /path/to/videos
 ```
-Dry-run is **on by default**. Outputs land in `./converted`.
+Dry-run is on by default. Output root defaults to `converted/` under scan dir.
 
-## Real conversion (keep originals)
+Real conversion (keep originals):
 ```bash
 DRY_RUN=0 DELETE=0 ./run.sh /path/to/videos
 ```
 
-## Enable deletion (advanced)
+Enable deletion only after validation confidence:
 ```bash
-# Deletes source video after successful conversion
-DRY_RUN=0 DELETE=1 ./run.sh /path/to/videos
-
-# Also delete sidecar files (only if uniquely anchored to the video)
 DRY_RUN=0 DELETE=1 DELETE_SIDECARS=1 ./run.sh /path/to/videos
 ```
 
-## Help, version, and dry-run confirmation
-```bash
-./run.sh --help
-./run.sh --version
-```
+## Release assets contract
+- `release.tar.gz`
+- `checksums.txt` (sha256)
+- `install.sh`
 
-## Subtitles
-The converter implements a smart subtitle selection strategy:
-- **Internal & External**: Merges internal subtitles with external sidecar files.
-- **Sidecar Discovery**: Automatically finds `.srt` files matching the video filename (e.g., `Movie.mkv` matches `Movie.en.srt`).
-- **Preferences**: Prioritizes English and Italian, forced subtitles, and text-based formats (SRT) over bitmaps (PGS/DVD).
-- **See [docs/subtitles.md](docs/subtitles.md)** for naming rules and detailed logic.
-
-## Debugging
-- **--print-subtitles**: Run with this flag to see exactly which subtitles (internal and external) are detected and how they will be mapped, without performing any conversion.
-  ```bash
-  ./run.sh --print-subtitles /path/to/video.mkv
-  ```
-
-## CI & Linting
-- **CI**: Uses `shellcheck-py` (pip-installed ShellCheck) for linting and `setup-ffmpeg` for ffmpeg/ffprobe.
-- **Bash 3.2**: Enforces compatibility with macOS system bash (3.2). A guard script (`scripts/check_bash32.sh`) runs in CI to catch Bash 4+ features (e.g. `local -n`, `declare -A`, `mapfile`).
-- **CI Package Install**: CI installs ffmpeg via apt (Linux) and Homebrew (macOS runners).
-- **Tests**: Run `./tests/run.sh` locally to execute the test harness.
-
-### Local Development Setup
-```bash
-python3 -m venv .venv
-. .venv/bin/activate
-pip install shellcheck-py
-shellcheck --version
-```
-
-### ShellCheck (no Homebrew)
-- Installer: `./scripts/install_shellcheck.sh` prefers an active Python venv, otherwise creates `.venv-shellcheck` locally and installs `shellcheck-py`.
-- Mirrors: set `PIP_INDEX_URL` (optionally `PIP_EXTRA_INDEX_URL`) to your mirror. Use URLs ending with `/simple`.
-- Proxies: set `HTTP_PROXY` / `HTTPS_PROXY` if required.
-- Verification: `shellcheck --version` after running the installer.
-- CI: secrets `PIP_INDEX_URL` and `PIP_EXTRA_INDEX_URL` are passed to the installer; no mirror URLs are committed to the repo.
+## CI gates
+- Bash syntax
+- ShellCheck
+- Bash 3.2 compatibility
+- Full test suite on macOS + Linux
+- Release dry-run packaging and installer validation
+- Action pinning check and release-doc/version sync check
 
 ## Reporting bugs
 Open an issue on GitHub with:
-- macOS version
-- `./run.sh --version` output
+- OS version
+- `jellyfin-converter --version` output
 - Command used and console logs (with `DRY_RUN=1` preferred)

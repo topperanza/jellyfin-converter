@@ -64,6 +64,14 @@ jobs:
         run: |
           ./scripts/check_bash32.sh
 
+      - name: Validate release docs/version sync
+        run: |
+          ./scripts/validate_release_docs.sh
+
+      - name: Validate action pinning
+        run: |
+          ./scripts/check_action_pinning.sh
+
       - name: Run Tests
         run: |
           if [ -x "./tests/run.sh" ]; then

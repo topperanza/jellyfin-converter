@@ -30,3 +30,10 @@ This repository is a local shell-based media conversion tool. Typical security f
 - Command/argument handling and shell injection resistance.
 - Unsafe file deletion or path traversal behavior.
 - CI/dependency supply-chain integrity.
+- Installer/release integrity checks (`checksums.txt`, tamper rejection).
+
+## Supply-chain controls
+- GitHub Actions in workflows are pinned to immutable commit SHAs.
+- Release artifacts are checksummed (sha256) and validated by installer.
+- Installer only supports HTTPS GitHub release download URLs.
+- Release pipeline includes action pinning and docs/version synchronization checks.

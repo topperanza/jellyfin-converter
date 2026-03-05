@@ -63,3 +63,13 @@ OUTROOT="$ABS_OUTROOT" \
 "$ROOT/run.sh" "$WORKDIR" >"$ABS_RUN_OUTPUT"
 
 grep -q "Output: $ABS_OUTROOT/" "$ABS_RUN_OUTPUT"
+
+SELF_CHECK_OUT="$TMP_ROOT/self-check.txt"
+PATH="$STUB_BIN:$PATH" \
+DRY_RUN=1 \
+DELETE=0 \
+SKIP_DELETE_CONFIRM=1 \
+LOG_DIR="$TMP_ROOT/logs-self-check" \
+"$ROOT/run.sh" --self-check "$WORKDIR" >"$SELF_CHECK_OUT"
+
+grep -q "Self-check: OK" "$SELF_CHECK_OUT"

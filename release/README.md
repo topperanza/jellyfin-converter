@@ -2,6 +2,11 @@
 
 This release bundles the Jellyfin-safe converter script with quick-start usage to keep first runs safe.
 
+## Release asset contract
+- `release.tar.gz`: versioned package contents
+- `checksums.txt`: sha256 manifest for release assets
+- `install.sh`: public installer entrypoint (verifies checksums before install)
+
 ## Quick Usage
 
 ```bash

@@ -14,7 +14,13 @@ while IFS= read -r file; do
     grep -En "$pattern" "$file"
     status=1
   fi
-done < <(find scripts tests -type f -name "*.sh" -print)
+done < <(find scripts tests release -type f -name "*.sh" -print)
+
+if [[ -f "install.sh" ]] && grep -En "$pattern" "install.sh" >/dev/null 2>&1; then
+  echo "Bash 3.2 compatibility violation in install.sh:"
+  grep -En "$pattern" "install.sh"
+  status=1
+fi
 
 if [[ "$status" -ne 0 ]]; then
   exit 1
