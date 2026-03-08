@@ -1,42 +1,49 @@
 # AGENTS.md
 
-Operational guidance for coding agents in this repository.
+## Purpose
+This repository is Codex-ready and should be worked in using small, reviewable, milestone-based changes.
 
-## Scope
-- Applies to the entire repository.
-- Prefer minimal, targeted diffs; do not refactor unrelated code.
+## Core working rules
+- Keep diffs narrow and task-scoped.
+- Do not perform unrelated refactors or formatting churn.
+- Preserve existing repo-native tooling and conventions unless the task explicitly changes them.
+- Never add or expose secrets in tracked files, logs, fixtures, or examples.
+- Prefer deterministic, reproducible behavior over convenience shortcuts.
+- Ask questions only if blocked; otherwise make one short assumption and proceed.
 
-## Project invariants (source of truth)
-- Runtime is Bash (must stay Bash 3.2 compatible).
-- Entry points are `run.sh`, `scripts/jellyfin_converter.sh`, and `install.sh`.
-- Keep dry-run-first behavior and conversion safety checks intact.
-- Preserve idempotence (`logs/.processed`) and current `converted/` handling/exclusions.
-- Optimize for deterministic conversion outputs; originals stay untouched unless explicit delete flags are enabled.
-
-## Tooling preferences
-- Use existing shell tooling; do not introduce new package managers/frameworks.
-- Required runtime tools: `ffmpeg`, `ffprobe`, `find`, `df`.
-- Optional tooling: `shellcheck` (run if present).
-- Codex container entry commands:
-  - Setup: `bash scripts/codex/setup.sh`
-  - Maintenance: `bash scripts/codex/maintenance.sh`
-
-## Validation commands (preferred order)
+## Validation order
+Run validation in this order unless the task explicitly requires otherwise:
 1. `bash scripts/check-fast.sh`
-2. `bash scripts/check-changed.sh` (use an explicit base ref like `origin/main` or `HEAD~1` when meaningful)
+2. `bash scripts/check-changed.sh` (only if present and useful)
 3. `bash scripts/check-full.sh`
 
-Also run `bash scripts/check_bash32.sh` when shell files change broadly.
+## Codex environment
+- setup: `bash scripts/codex/setup.sh`
+- maintenance: `bash scripts/codex/maintenance.sh`
 
-## Long-task checkpoints
-- Milestone workflow: plan -> implement one milestone -> validate -> update `docs/codex/STATUS.md` -> checkpoint.
-- Planning source: `docs/codex/PLAN.md`.
-- Operator guide: `docs/codex/RUNBOOK.md`.
-- Store checkpoint notes in `.codex/checkpoints/MILESTONE-<n>.md`.
-- Each checkpoint must record: files changed, commands run, results, risks/next step.
+## Milestone workflow
+1. Inspect current repo state
+2. Update or confirm plan in `docs/codex/PLAN.md`
+3. Execute one coherent milestone only
+4. Run milestone validation
+5. Update `docs/codex/STATUS.md`
+6. Checkpoint clearly before stopping
 
-## Safety and hygiene
-- Never commit secrets/tokens or machine-local credentials.
-- No unrelated formatting churn.
-- Update docs only when behavior or operator workflow changes.
-- Keep release/integrity expectations intact (`release/check-release.sh`, installer checksum flow).
+## Repo-specific invariants
+- Source of truth:
+  - The repo's media conversion rules, output expectations, and tests define intended behavior.
+- Primary workflow:
+  - Deterministic media conversion pipeline for Jellyfin-compatible outputs.
+- Validation specifics:
+  - Prefer fast output validation first, then broader conversion/test paths.
+  - Verify codec, container, duration, and stream mapping explicitly for changed paths.
+- High-risk paths:
+  - ffmpeg command generation
+  - codec/container selection
+  - stream mapping
+  - metadata / subtitle handling
+  - output verification
+- Safety constraints:
+  - Originals untouched.
+  - Media transforms must be deterministic and reproducible.
+  - Prefer explicit codec/container rules over implicit ffmpeg behavior.
