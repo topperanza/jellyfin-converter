@@ -7,6 +7,7 @@ This repository is Codex-ready and should be worked in using small, reviewable, 
 - Keep diffs narrow and task-scoped.
 - Do not perform unrelated refactors or formatting churn.
 - Preserve existing repo-native tooling and conventions unless the task explicitly changes them.
+- Do not introduce case-only path duplicates; generic repo directories should use lowercase names.
 - Never add or expose secrets in tracked files, logs, fixtures, or examples.
 - Prefer deterministic, reproducible behavior over convenience shortcuts.
 - Ask questions only if blocked; otherwise make one short assumption and proceed.
