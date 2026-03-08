@@ -38,13 +38,12 @@ Create/update `.codex/checkpoints/MILESTONE-<n>.md` with:
 ```
 
 ## Validation per milestone
-Run the narrowest useful checks first, then repo-standard validation before handoff:
+Run the stable validation entrypoints first, then full tests before handoff:
 
 ```bash
-bash -n scripts/jellyfin_converter.sh
-./run.sh --self-check
-./tests/run.sh tests/suite_parser.sh
-./tests/run.sh
+bash scripts/check-fast.sh
+bash scripts/check-changed.sh
+bash scripts/check-full.sh
 ```
 
 Keep diffs minimal and do not weaken dry-run-first safety defaults.
