@@ -23,14 +23,15 @@ Operational guidance for coding agents in this repository.
 
 ## Validation commands (preferred order)
 1. `bash scripts/check-fast.sh`
-2. `bash scripts/check-changed.sh` (when present/applicable)
+2. `bash scripts/check-changed.sh` (use an explicit base ref like `origin/main` or `HEAD~1` when meaningful)
 3. `bash scripts/check-full.sh`
 
-Also run `scripts/check_bash32.sh` when shell files change broadly.
+Also run `bash scripts/check_bash32.sh` when shell files change broadly.
 
 ## Long-task checkpoints
 - Milestone workflow: plan -> implement one milestone -> validate -> update `docs/codex/STATUS.md` -> checkpoint.
-- Planning source: `docs/codex/PLAN.md` (with `docs/codex-milestones.md` as supporting guidance).
+- Planning source: `docs/codex/PLAN.md`.
+- Operator guide: `docs/codex/RUNBOOK.md`.
 - Store checkpoint notes in `.codex/checkpoints/MILESTONE-<n>.md`.
 - Each checkpoint must record: files changed, commands run, results, risks/next step.
 
