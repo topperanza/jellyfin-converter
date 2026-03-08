@@ -1,56 +1,41 @@
 # AGENTS.md
 
-Guidance for coding agents working in this repository.
+Operational guidance for coding agents in this repository.
 
 ## Scope
-- This file applies to the entire repository.
-- Prefer minimal, targeted changes that preserve existing behavior.
+- Applies to the entire repository.
+- Prefer minimal, targeted diffs; do not refactor unrelated code.
 
-## Project Snapshot
-- Project: `jellyfin-converter`
-- Language/runtime: Bash (`bash` 3.2+ compatibility required)
-- Entry points: `run.sh`, `scripts/jellyfin_converter.sh`, `install.sh`
-- Core docs: `README.md`, `docs/cli-contract-v1.md`, `docs/architecture.md`, `docs/user-guide.md`
+## Project invariants (source of truth)
+- Runtime is Bash (must stay Bash 3.2 compatible).
+- Entry points are `run.sh`, `scripts/jellyfin_converter.sh`, and `install.sh`.
+- Keep dry-run-first behavior and conversion safety checks intact.
+- Preserve idempotence (`logs/.processed`) and current `converted/` handling/exclusions.
+- Optimize for deterministic conversion outputs; originals stay untouched unless explicit delete flags are enabled.
 
-## Safety-Critical Expectations
-- Keep defaults conservative (dry-run-first behavior).
-- Do not weaken validation/delete safeguards.
-- Preserve idempotence behavior (processed tracking in `logs/.processed`).
-- Keep `converted/` output handling and scan exclusions intact unless explicitly requested.
+## Tooling preferences
+- Use existing shell tooling; do not introduce new package managers/frameworks.
+- Required runtime tools: `ffmpeg`, `ffprobe`, `find`, `df`.
+- Optional tooling: `shellcheck` (run if present).
+- Codex container entry commands:
+  - Setup: `bash scripts/codex/setup.sh`
+  - Maintenance: `bash scripts/codex/maintenance.sh`
 
-## Coding Standards
-- Write portable shell compatible with Bash 3.2.
-- Avoid Bash 4+ only features (e.g., associative arrays, `mapfile`, `globstar`).
-- Quote variables defensively and avoid word-splitting bugs.
-- Prefer extending existing helpers in `scripts/lib/` over duplicating logic.
-- Keep changes ASCII unless file content already requires otherwise.
+## Validation commands (preferred order)
+1. `bash -n scripts/jellyfin_converter.sh`
+2. `./run.sh --self-check`
+3. `./tests/run.sh tests/suite_parser.sh`
+4. `./tests/run.sh`
 
-## Validation Checklist
-Run relevant checks after edits:
+Also run `scripts/check_bash32.sh` when shell files change broadly.
 
-1. Syntax check:
-```bash
-bash -n scripts/jellyfin_converter.sh
-```
-2. Full test suite:
-```bash
-./tests/run.sh
-```
-3. Targeted suite (when appropriate):
-```bash
-./tests/run.sh tests/suite_parser.sh
-```
+## Long-task checkpoints
+- Milestone workflow: `docs/codex-milestones.md`.
+- Store checkpoint notes in `.codex/checkpoints/MILESTONE-<n>.md`.
+- Each checkpoint must record: files changed, commands run, results, risks/next step.
 
-If ShellCheck is available, run it on changed shell scripts.
-
-## Change Discipline
-- Update docs/examples when user-visible behavior or flags change.
-- Keep release/integrity expectations intact (`release/check-release.sh`, installer/checksum flow).
-- Do not commit unrelated refactors.
-- If the worktree contains unrelated modifications, leave them untouched.
-
-## Quick Navigation
-- Main script: `scripts/jellyfin_converter.sh`
-- Shared libs: `scripts/lib/*.sh`
-- Tests: `tests/`
-- Example env/config: `examples/`, `config/default_profiles.env`
+## Safety and hygiene
+- Never commit secrets/tokens or machine-local credentials.
+- No unrelated formatting churn.
+- Update docs only when behavior or operator workflow changes.
+- Keep release/integrity expectations intact (`release/check-release.sh`, installer checksum flow).
