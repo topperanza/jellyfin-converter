@@ -22,15 +22,15 @@ Operational guidance for coding agents in this repository.
   - Maintenance: `bash scripts/codex/maintenance.sh`
 
 ## Validation commands (preferred order)
-1. `bash -n scripts/jellyfin_converter.sh`
-2. `./run.sh --self-check`
-3. `./tests/run.sh tests/suite_parser.sh`
-4. `./tests/run.sh`
+1. `bash scripts/check-fast.sh`
+2. `bash scripts/check-changed.sh` (when present/applicable)
+3. `bash scripts/check-full.sh`
 
 Also run `scripts/check_bash32.sh` when shell files change broadly.
 
 ## Long-task checkpoints
-- Milestone workflow: `docs/codex-milestones.md`.
+- Milestone workflow: plan -> implement one milestone -> validate -> update `docs/codex/STATUS.md` -> checkpoint.
+- Planning source: `docs/codex/PLAN.md` (with `docs/codex-milestones.md` as supporting guidance).
 - Store checkpoint notes in `.codex/checkpoints/MILESTONE-<n>.md`.
 - Each checkpoint must record: files changed, commands run, results, risks/next step.
 

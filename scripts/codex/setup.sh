@@ -54,7 +54,7 @@ cat > .codex/env.sh <<ENV
 export JELLYFIN_CONVERTER_ROOT="$REPO_ROOT"
 ENV
 
-chmod +x run.sh scripts/jellyfin_converter.sh tests/run.sh scripts/codex/setup.sh scripts/codex/maintenance.sh 2>/dev/null || true
+chmod +x run.sh scripts/jellyfin_converter.sh tests/run.sh scripts/codex/setup.sh scripts/codex/maintenance.sh scripts/check-fast.sh scripts/check-full.sh scripts/check-changed.sh 2>/dev/null || true
 
 have_media_tools=0
 if install_ffmpeg_if_missing; then
@@ -74,22 +74,16 @@ else
   echo "ffprobe: missing"
 fi
 
-VALIDATE_1='bash -n scripts/jellyfin_converter.sh'
-VALIDATE_2='./run.sh --self-check'
-VALIDATE_3='./tests/run.sh tests/suite_parser.sh'
-
 echo "==> Running smoke validation"
-echo "$VALIDATE_1"
-bash -n scripts/jellyfin_converter.sh
-
+echo "bash scripts/check-fast.sh"
 if [[ "$have_media_tools" -eq 1 ]]; then
-  echo "$VALIDATE_2"
-  ./run.sh --self-check >/dev/null
+  bash scripts/check-fast.sh
 else
-  echo "SKIP: $VALIDATE_2 (ffmpeg/ffprobe unavailable)"
+  echo "Running reduced smoke validation without ffmpeg/ffprobe"
+  echo "bash -n scripts/jellyfin_converter.sh"
+  bash -n scripts/jellyfin_converter.sh
+  echo "./tests/run.sh tests/suite_parser.sh"
+  ./tests/run.sh tests/suite_parser.sh
 fi
-
-echo "$VALIDATE_3"
-./tests/run.sh tests/suite_parser.sh
 
 echo "Setup completed"
