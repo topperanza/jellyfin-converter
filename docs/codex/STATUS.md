@@ -1,39 +1,34 @@
 # Codex Run Status
 
-_Last updated: 2026-03-08 03:29 UTC_
+_Last updated: 2026-03-09 06:12 UTC_
 
 ## Current task
-- Completed full repository review of Codex workflow scaffolding and validation entrypoints.
-- Seeded next-phase milestone plan focused on validation hardening, subtitle safety test depth, and runbook-driven resumability.
+- Audited and confirmed curated `docs/project-files/` summary layer for ChatGPT Project sync.
+- Aligned milestone guidance so project-file summaries are explicitly maintained before checkpoint.
 
 ## Current milestone
-- ID: MILESTONE-0
-- Goal: review current state, validate baseline scripts, and define operational milestone plan.
-- Completion criteria: baseline validation passes and next-phase plan/checkpoint docs are updated.
+- ID: MILESTONE-docs-project-files
+- Goal: keep canonical low-churn project summaries and milestone sync guidance aligned.
+- Completion criteria: `docs/project-files/*` exists with concise summaries and workflow docs require maintenance updates before checkpoint.
 
 ## Files touched
-- `AGENTS.md`
-- `.gitignore`
 - `docs/codex/PLAN.md`
 - `docs/codex/STATUS.md`
-- `docs/codex/RUNBOOK.md`
-- `.codex/checkpoints/MILESTONE-0.md`
 
 ## Commands run
 - `bash scripts/check-fast.sh`
-- `bash scripts/check-full.sh`
 
 ## Results
-- Both baseline validation entrypoints passed.
-- Codex scaffolding exists and is executable.
-- Primary workflow risk surfaced: generated `.codex/env.sh` was not ignored, causing avoidable git noise.
+- Curated summary docs under `docs/project-files/` are present and populated.
+- Root guidance already includes project-sync, documentation-scope, and milestone doc-sync rules.
+- Codex plan now explicitly repeats project-file update requirement at milestone closure.
+- Fast validation passed.
 
 ## Blockers
 - none
 
 ## Known risks
-- `docs/NEXT_STEPS.md` roadmap appears stale relative to current implemented behavior and is not yet aligned to the new milestone plan.
-- `scripts/check-changed.sh` depends on caller-supplied base refs for best signal; usage needs to stay explicit in milestone prompts.
+- Summary docs can drift if milestone updates skip `docs/project-files/*`; guardrails now exist in both `AGENTS.md` and `docs/codex/PLAN.md`.
 
 ## Next step
-- Start MILESTONE-1 and tighten incremental validation behavior/documentation with minimal script-level changes.
+- Run fast validation and checkpoint this documentation-alignment milestone.
