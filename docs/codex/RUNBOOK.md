@@ -23,7 +23,8 @@ bash scripts/codex/maintenance.sh
 2. Make narrow changes only inside that scope.
 3. Run milestone validation commands.
 4. Update `docs/codex/STATUS.md`.
-5. Write/update `.codex/checkpoints/MILESTONE-<n>.md`.
+5. Update affected `docs/project-files/*` when behavior/contracts/process changes.
+6. Write/update `.codex/checkpoints/MILESTONE-<n>.md`.
 
 ## 4) Validation command set
 Fast validation:
@@ -52,5 +53,6 @@ Create `.codex/checkpoints/MILESTONE-<n>.md` with:
 ## 6) Handoff checklist
 - Working tree clean except intended changes.
 - `docs/codex/STATUS.md` reflects latest command evidence.
+- Affected `docs/project-files/*` summaries are updated for milestone changes.
 - Checkpoint file is present for the completed milestone.
 - Final validation command output is captured in task summary.

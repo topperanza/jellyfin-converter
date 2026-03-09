@@ -11,6 +11,9 @@ This repository is Codex-ready and should be worked in using small, reviewable, 
 - Never add or expose secrets in tracked files, logs, fixtures, or examples.
 - Prefer deterministic, reproducible behavior over convenience shortcuts.
 - Ask questions only if blocked; otherwise make one short assumption and proceed.
+- Selected files under `docs/project-files/` are intended to be uploaded to this repository's own ChatGPT Project to keep future chats aligned with current repo reality. Keep these files concise, factual, and low-churn.
+- Do not duplicate the full repo documentation in `docs/project-files/`. Prefer concise summaries, invariants, handoff notes, and decision logs.
+- When a milestone changes product scope, architecture, workflow behavior, safety boundaries, validation expectations, or operator-facing process, update the relevant file(s) under `docs/project-files/` before checkpointing.
 
 ## Validation order
 Run validation in this order unless the task explicitly requires otherwise:
@@ -28,7 +31,8 @@ Run validation in this order unless the task explicitly requires otherwise:
 3. Execute one coherent milestone only
 4. Run milestone validation
 5. Update `docs/codex/STATUS.md`
-6. Checkpoint clearly before stopping
+6. Update affected `docs/project-files/*`
+7. Checkpoint clearly before stopping
 
 ## Repo-specific invariants
 - Source of truth:
