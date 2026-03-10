@@ -75,3 +75,42 @@ test_selection_commentary() {
   assert_contains "$output" "-map 0:1" "Should keep Commentary 1"
   assert_contains "$output" "-map 0:2" "Should keep Commentary 2"
 }
+
+test_selection_prefers_default_normal_track() {
+  local input
+  input="$(cat tests/fixtures/eng_default_vs_nondefault.txt)"
+
+  select_internal_subtitles "$input"
+
+  local output="${SUBTITLE_SELECTION_MAP_ARGS[*]}"
+
+  assert_contains "$output" "-map 0:1" "Should keep default English normal track"
+  assert_not_contains "$output" "-map 0:0" "Should skip non-default English normal track"
+  assert_eq "1" "$SUBTITLE_INTERNAL_COUNT" "Should select only one English normal track"
+}
+
+test_selection_prefers_text_over_bitmap_for_same_slot() {
+  local input
+  input="$(cat tests/fixtures/eng_text_vs_bitmap.txt)"
+
+  select_internal_subtitles "$input"
+
+  local output="${SUBTITLE_SELECTION_MAP_ARGS[*]}"
+
+  assert_contains "$output" "-map 0:1" "Should prefer text codec for English normal slot"
+  assert_not_contains "$output" "-map 0:0" "Should skip bitmap codec when text exists for same slot"
+  assert_eq "1" "$SUBTITLE_INTERNAL_COUNT" "Should select one English normal track"
+}
+
+test_selection_fallback_when_no_wanted_or_forced() {
+  local input
+  input="$(cat tests/fixtures/fallback_non_wanted.txt)"
+
+  select_internal_subtitles "$input"
+
+  local output="${SUBTITLE_SELECTION_MAP_ARGS[*]}"
+
+  assert_contains "$output" "-map 0:1" "Fallback should choose highest-ranked default non-wanted track"
+  assert_not_contains "$output" "-map 0:0" "Fallback should not select lower-ranked non-default track"
+  assert_eq "1" "$SUBTITLE_INTERNAL_COUNT" "Fallback should select exactly one track"
+}

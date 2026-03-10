@@ -1,22 +1,21 @@
 # Codex Run Status
 
-_Last updated: 2026-03-10 09:42 UTC_
+_Last updated: 2026-03-10 10:35 UTC_
 
 ## Current task
-- Closed MILESTONE-1 formally and advanced active tracking to MILESTONE-2.
-- Clarified milestone ID policy for plan milestones vs exceptional documentation closures.
-- Captured MILESTONE-2 coverage already present in existing discovery/selection test suites.
+- Completed MILESTONE-2 by mapping existing subtitle discovery/selection coverage and adding only missing edge-case tests.
+- Promoted active milestone tracking to MILESTONE-3.
 
 ## Current milestone
-- ID: MILESTONE-2
-- Title: Subtitle/discovery safety coverage expansion
-- Goal: add focused tests around highest-risk media-selection edges before feature work.
-- Completion criteria: new tests cover identified edge cases and pass consistently on Bash 3.2-compatible shell.
+- ID: MILESTONE-3
+- Title: Operator-facing runbook + resume reliability
+- Goal: ensure long-running Codex tasks can be resumed and handed off cleanly.
+- Completion criteria: runbook includes startup, checkpoint, and handoff instructions tied to actual repo scripts.
 
 ## Last completed milestone
-- ID: MILESTONE-1
-- Goal: tighten validation ergonomics for incremental runs without changing conversion behavior.
-- Checkpoint: `.codex/checkpoints/MILESTONE-1.md`
+- ID: MILESTONE-2
+- Goal: add focused tests around highest-risk media-selection edges before feature work.
+- Checkpoint: `.codex/checkpoints/MILESTONE-2.md`
 
 ## Additional completed closure (outside numbered plan milestones)
 - ID: MILESTONE-docs-project-files
@@ -24,9 +23,15 @@ _Last updated: 2026-03-10 09:42 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
 
 ## Files touched
-- `.codex/checkpoints/MILESTONE-1.md`
+- `tests/suite_discovery.sh`
+- `tests/suite_selection.sh`
+- `tests/fixtures/discovery/strict_anchoring/Movie.forced.srt`
+- `tests/fixtures/discovery/strict_anchoring/MovieX.eng.srt`
+- `tests/fixtures/eng_default_vs_nondefault.txt`
+- `tests/fixtures/eng_text_vs_bitmap.txt`
+- `tests/fixtures/fallback_non_wanted.txt`
+- `.codex/checkpoints/MILESTONE-2.md`
 - `docs/codex/STATUS.md`
-- `docs/codex/RUNBOOK.md`
 
 ## Commands run
 - `bash scripts/check-fast.sh`
@@ -34,18 +39,15 @@ _Last updated: 2026-03-10 09:42 UTC_
 - `bash scripts/check-full.sh`
 
 ## Results
-- MILESTONE-1 closure captured with files/commands/results/risks in `.codex/checkpoints/MILESTONE-1.md`.
-- Numbered milestones remain the source of truth for active execution (`MILESTONE-<n>` in plan order).
-- Existing discovery/selection suites already cover part of MILESTONE-2 scope (`tests/suite_discovery.sh`, `tests/suite_selection.sh`).
-- Remaining MILESTONE-2 work is to fill scenario gaps rather than duplicate current coverage.
+- Added strict discovery anchoring coverage for `und+forced` sidecars and prefix-collision rejection.
+- Added selection coverage for: default-vs-nondefault normal slot, text-vs-bitmap tie in same slot, and fallback when no wanted/forced subtitles exist.
 - Validation passed: fast, changed-file, and full checks.
 
 ## Blockers
 - none
 
 ## Known risks
-- Summary docs can still drift if future milestone closures skip `docs/project-files/*`; guardrails remain in `AGENTS.md` and `docs/codex/PLAN.md`.
-- MILESTONE-2 boundaries can blur if new tests are added without mapping each case to an explicit uncovered edge.
+- `select_internal_subtitles` and `build_subtitle_plan` have overlapping ranking behavior but separate implementations; future policy changes require synchronized tests in both areas.
 
 ## Next step
-- Execute MILESTONE-2 gap analysis, add only missing discovery/selection edge-case tests, then checkpoint.
+- Execute MILESTONE-3 with runbook/resume audit only, keeping scope doc-focused and checkpointed.
