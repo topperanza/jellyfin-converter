@@ -1,11 +1,11 @@
 # Codex Run Status
 
-_Last updated: 2026-03-10 08:39 UTC_
+_Last updated: 2026-03-10 09:38 UTC_
 
 ## Current task
-- Defined and activated `MILESTONE-5` after `MILESTONE-4` closure.
-- Updated runbook validation guidance to be milestone-generic instead of milestone-4-specific.
-- Re-ran fast and changed-file validation for doc/process sync evidence.
+- Updated Codex scaffolding to make milestone gating explicit via a blocking/non-blocking doc sync matrix.
+- Added `docs/codex/REPO_OVERVIEW.md` and `docs/codex/DOC_SYNC_MATRIX.md` as control-plane references.
+- Synced milestone-completion and docs/project-files source-of-truth rules across `AGENTS.md` and `docs/codex/RUNBOOK.md`.
 
 ## Current milestone
 - ID: MILESTONE-5
@@ -24,20 +24,26 @@ _Last updated: 2026-03-10 08:39 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
 
 ## Files touched
+- `AGENTS.md`
+- `docs/codex/DOC_SYNC_MATRIX.md`
 - `docs/codex/PLAN.md`
+- `docs/codex/REPO_OVERVIEW.md`
 - `docs/codex/RUNBOOK.md`
 - `docs/codex/STATUS.md`
 
 ## Commands run
 - `bash scripts/check-fast.sh`
 - `bash scripts/check-changed.sh HEAD~1`
+- `bash scripts/check-full.sh`
 
 ## Results
-- `MILESTONE-5` is now defined in `docs/codex/PLAN.md` and promoted as active in `docs/codex/STATUS.md`.
-- Runbook validation guidance now points operators to active milestone command blocks in `docs/codex/PLAN.md` and includes a generic targeted-suite pattern.
+- Added explicit control-plane docs for repo overview and documentation gate policy: `docs/codex/REPO_OVERVIEW.md`, `docs/codex/DOC_SYNC_MATRIX.md`.
+- AGENTS and RUNBOOK now use the same milestone-completion rule and docs/project-files downstream-sync rule.
+- Milestone execution loop in RUNBOOK now follows: implement → validate → required docs via DOC_SYNC_MATRIX → milestone gate → checkpoint → commit/push.
 - Validation command results:
   - Pass: `bash scripts/check-fast.sh`
   - Pass: `bash scripts/check-changed.sh HEAD~1`
+  - Pass: `bash scripts/check-full.sh`
 
 ## Blockers
 - none
