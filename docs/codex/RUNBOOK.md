@@ -26,6 +26,10 @@ bash scripts/codex/maintenance.sh
 5. Update affected `docs/project-files/*` when behavior/contracts/process changes.
 6. Write/update `.codex/checkpoints/MILESTONE-<n>.md`.
 
+## 3a) Milestone ID policy
+- Active implementation work must use numbered IDs from `docs/codex/PLAN.md` (`MILESTONE-<n>` in plan order).
+- Exceptional documentation-only closures may use non-numbered IDs (for example `MILESTONE-docs-project-files`) but must be listed in `docs/codex/STATUS.md` as additional completed closures, not as the current active milestone.
+
 ## 4) Validation command set
 Fast validation:
 ```bash
