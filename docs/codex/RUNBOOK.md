@@ -2,6 +2,10 @@
 
 Operational commands for long-running Codex tasks in this repository.
 
+Milestone completion is determined by the milestone contract plus the blocking rules in docs/codex/DOC_SYNC_MATRIX.md. Non-blocking documentation hygiene items should be recorded as follow-ups and must not automatically block advancement.
+
+docs/project-files/ exists to generate concise files for upload into this repository’s ChatGPT Project. It is a downstream sync surface, not the primary source of truth for Codex. Code, tests, config, and docs/codex/* govern milestone decisions.
+
 ## 1) Start a fresh Codex session
 ```bash
 bash scripts/codex/setup.sh
@@ -16,15 +20,17 @@ bash scripts/codex/maintenance.sh
 1. `AGENTS.md`
 2. `docs/codex/PLAN.md`
 3. `docs/codex/STATUS.md`
-4. Most recent `.codex/checkpoints/MILESTONE-<n>.md`
+4. `docs/codex/REPO_OVERVIEW.md`
+5. `docs/codex/DOC_SYNC_MATRIX.md`
+6. Most recent `.codex/checkpoints/MILESTONE-<n>.md`
 
 ## 3) Milestone execution loop
-1. Confirm active milestone scope from `docs/codex/PLAN.md`.
-2. Make narrow changes only inside that scope.
-3. Run milestone validation commands.
-4. Update `docs/codex/STATUS.md`.
-5. Update affected `docs/project-files/*` when behavior/contracts/process changes.
-6. Write/update `.codex/checkpoints/MILESTONE-<n>.md`.
+1. Confirm active milestone scope from `docs/codex/PLAN.md` (implement).
+2. Run milestone validation commands (validate).
+3. Update required docs per `docs/codex/DOC_SYNC_MATRIX.md`.
+4. Apply milestone gate using milestone contract + DOC_SYNC_MATRIX blocking rules; record pass/follow-ups in `docs/codex/STATUS.md`.
+5. Write/update `.codex/checkpoints/MILESTONE-<n>.md` (checkpoint).
+6. Commit/push.
 
 ## 3a) Milestone ID policy
 - Active implementation work must use numbered IDs from `docs/codex/PLAN.md` (`MILESTONE-<n>` in plan order).
@@ -68,6 +74,6 @@ Create `.codex/checkpoints/MILESTONE-<n>.md` with:
 ## 6) Handoff checklist
 - Working tree clean except intended changes.
 - `docs/codex/STATUS.md` reflects latest command evidence.
-- Affected `docs/project-files/*` summaries are updated for milestone changes.
+- Required docs are updated per `docs/codex/DOC_SYNC_MATRIX.md`; non-blocking items are tracked as follow-ups.
 - Checkpoint file is present for the completed milestone.
 - Final validation command output is captured in task summary.

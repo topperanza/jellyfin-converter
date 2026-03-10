@@ -4,7 +4,7 @@ _Last refreshed: 2026-03-10_
 
 ## Milestone sequence
 
-Milestone closure rule: before checkpointing, update any affected `docs/project-files/*` summaries when scope, architecture, workflow behavior, safety boundaries, validation expectations, or operator-facing process changes.
+Milestone closure rule: milestone completion is determined by the milestone contract plus blocking rules in `docs/codex/DOC_SYNC_MATRIX.md`; record non-blocking documentation hygiene as follow-ups without blocking advancement.
 
 ### Milestone 0 (ID: MILESTONE-0) — Repo review + plan confirmation
 - **Objective:** Confirm current health, validation entrypoints, and codex scaffolding baseline.

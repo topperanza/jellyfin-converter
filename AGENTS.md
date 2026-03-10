@@ -14,6 +14,8 @@ This repository is Codex-ready and should be worked in using small, reviewable, 
 - Selected files under `docs/project-files/` are intended to be uploaded to this repository's own ChatGPT Project to keep future chats aligned with current repo reality. Keep these files concise, factual, and low-churn.
 - Do not duplicate the full repo documentation in `docs/project-files/`. Prefer concise summaries, invariants, handoff notes, and decision logs.
 - When a milestone changes product scope, architecture, workflow behavior, safety boundaries, validation expectations, or operator-facing process, update the relevant file(s) under `docs/project-files/` before checkpointing.
+- Milestone completion is determined by the milestone contract plus the blocking rules in docs/codex/DOC_SYNC_MATRIX.md. Non-blocking documentation hygiene items should be recorded as follow-ups and must not automatically block advancement.
+- docs/project-files/ exists to generate concise files for upload into this repository’s ChatGPT Project. It is a downstream sync surface, not the primary source of truth for Codex. Code, tests, config, and docs/codex/* govern milestone decisions.
 
 ## Validation order
 Run validation in this order unless the task explicitly requires otherwise:
@@ -30,8 +32,8 @@ Run validation in this order unless the task explicitly requires otherwise:
 2. Update or confirm plan in `docs/codex/PLAN.md`
 3. Execute one coherent milestone only
 4. Run milestone validation
-5. Update `docs/codex/STATUS.md`
-6. Update affected `docs/project-files/*`
+5. Update required docs per `docs/codex/DOC_SYNC_MATRIX.md`
+6. Apply milestone gate and record pass/follow-ups in `docs/codex/STATUS.md`
 7. Checkpoint clearly before stopping
 
 ## Repo-specific invariants
