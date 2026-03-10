@@ -66,14 +66,18 @@ test_discovery_strict_anchoring() {
   
   # Expected:
   # Movie.eng.srt -> eng|0|0|0|srt
+  # Movie.forced.srt -> und|1|0|0|srt
   # Movie.srt -> und|0|0|0|srt (exact match, no suffix -> kept)
   # Movie - Sequel.srt -> IGNORED (ambiguous suffix without tags)
+  # MovieX.eng.srt -> IGNORED (prefix collision; not a valid sidecar for Movie.mkv)
 
   assert_contains "$output" "Movie.eng.srt|eng|0|0|0|srt"
+  assert_contains "$output" "Movie.forced.srt|und|1|0|0|srt"
   assert_contains "$output" "Movie.srt|und|0|0|0|srt"
-  
-  # Ensure the sequel is NOT in the output
+
+  # Ensure the sequel and prefix collision are NOT in the output
   assert_not_contains "$output" "Sequel"
+  assert_not_contains "$output" "MovieX.eng.srt"
 }
 
 test_discovery_bitmap_sidecars_keep0() {
