@@ -16,6 +16,11 @@ Default sequence:
 6. Update affected `docs/project-files/*`
 7. Checkpoint (`.codex/checkpoints/MILESTONE-<n>.md`)
 
+## Milestone ID and resume policy
+- Active implementation work must use numbered milestones from `docs/codex/PLAN.md` (`MILESTONE-<n>` in plan order).
+- Non-numbered milestone IDs are exceptional documentation-only closures and must be tracked under `docs/codex/STATUS.md` additional closures, not as active milestones.
+- Resume/handoff is complete only when `docs/codex/STATUS.md` and `.codex/checkpoints/MILESTONE-<n>.md` both record the latest validation evidence and next-step ownership.
+
 ## Files to check first
 - `AGENTS.md`
 - `docs/codex/PLAN.md`

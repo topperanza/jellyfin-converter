@@ -1,6 +1,6 @@
 # Codex Long-Run Plan (Phase: workflow hardening + subtitle pipeline readiness)
 
-_Last refreshed: 2026-03-08_
+_Last refreshed: 2026-03-10_
 
 ## Milestone sequence
 
@@ -47,6 +47,17 @@ Milestone closure rule: before checkpointing, update any affected `docs/project-
 - **Completion criteria:** runbook includes startup, checkpoint, and handoff instructions tied to actual repo scripts.
 - **Risks / rollback:** documentation drift; rollback by reverting runbook-only changes.
 - **Checkpoint update:** finalize status with current milestone, command evidence, and next action owner prompt.
+
+### Milestone 4 (ID: MILESTONE-4) — Subtitle ranking parity hardening
+- **Objective:** Reduce ranking-policy drift risk between `select_internal_subtitles` and `build_subtitle_plan` with focused parity assertions.
+- **Scope / files:** `tests/suite_selection.sh`, `tests/suite_ffmpeg.sh`, optional fixtures under `tests/fixtures/`.
+- **Commands:**
+  - `bash scripts/check-fast.sh`
+  - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
+- **Completion criteria:** added/updated tests assert aligned ranking outcomes across internal selection and ffmpeg subtitle plan behavior for shared policy scenarios.
+- **Risks / rollback:** fixture overfitting can hide real drift; rollback by removing brittle assertions and retaining only deterministic parity cases.
+- **Checkpoint update:** record parity scenarios, command results, unresolved policy ambiguities, and explicit next-step handoff prompt.
 
 ## Preferred validation after each milestone
 ```bash
