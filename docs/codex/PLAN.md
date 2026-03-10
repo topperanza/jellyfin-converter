@@ -60,6 +60,18 @@ Milestone closure rule: before checkpointing, update any affected `docs/project-
 - **Risks / rollback:** fixture overfitting can hide real drift; rollback by removing brittle assertions and retaining only deterministic parity cases.
 - **Checkpoint update:** record parity scenarios, command results, unresolved policy ambiguities, and explicit next-step handoff prompt.
 
+### Milestone 5 (ID: MILESTONE-5) — Subtitle ranking policy consolidation
+- **Objective:** Reduce future drift by consolidating shared subtitle ranking policy so `select_internal_subtitles` and `build_subtitle_plan` use the same scoring path.
+- **Scope / files:** `scripts/lib/media_filters.sh`, `tests/suite_selection.sh`, `tests/suite_ffmpeg.sh`, optional fixtures under `tests/fixtures/`, and affected `docs/project-files/*` summaries if workflow/validation expectations change.
+- **Commands:**
+  - `bash scripts/check-fast.sh`
+  - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
+  - `bash scripts/check-full.sh`
+- **Completion criteria:** shared ranking helper/path is used for both internal selection and subtitle-plan construction, parity scenarios remain green, and no regression is observed in existing subtitle fixture coverage.
+- **Risks / rollback:** ranking-policy merge can introduce subtle ordering regressions; rollback by reverting consolidation changes and retaining parity tests that expose divergence.
+- **Checkpoint update:** record consolidation scope, touched ranking call sites, command evidence, unresolved policy questions, and explicit next-step owner prompt.
+
 ## Preferred validation after each milestone
 ```bash
 bash scripts/check-fast.sh

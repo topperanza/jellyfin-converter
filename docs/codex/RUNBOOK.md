@@ -36,10 +36,9 @@ Fast validation:
 bash scripts/check-fast.sh
 ```
 
-Milestone-4 parity validation:
+Milestone-targeted validation:
 ```bash
-./tests/run.sh tests/suite_selection.sh
-./tests/run.sh tests/suite_ffmpeg.sh
+./tests/run.sh <suite-or-pattern>...
 ```
 
 Changed-file validation (recommended explicit base ref):
@@ -50,6 +49,12 @@ bash scripts/check-changed.sh HEAD~1
 Full validation before milestone/final handoff:
 ```bash
 bash scripts/check-full.sh
+```
+
+Use the active milestone command block in `docs/codex/PLAN.md` to select exact targeted suites.
+Example for subtitle ranking milestones:
+```bash
+./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh
 ```
 
 ## 5) Checkpoint template
