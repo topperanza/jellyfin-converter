@@ -100,6 +100,63 @@ test_plan_scoring_external_bitmap_vs_internal_text() {
   assert_not_contains "$plan" "ext|/ext/eng.sup|eng|0|sup|0"
 }
 
+test_plan_prefers_default_normal_track() {
+  local input
+  input="$(cat tests/fixtures/eng_default_vs_nondefault.txt)"
+
+  probe_internal_subs() {
+    echo "$input"
+  }
+
+  discover_external_subs() {
+    echo ""
+  }
+
+  local plan
+  plan="$(build_subtitle_plan "dummy.mkv")"
+
+  assert_contains "$plan" "int|1|eng|0|subrip|0"
+  assert_not_contains "$plan" "int|0|eng|0|subrip|0"
+}
+
+test_plan_prefers_text_over_bitmap_for_same_slot() {
+  local input
+  input="$(cat tests/fixtures/eng_text_vs_bitmap.txt)"
+
+  probe_internal_subs() {
+    echo "$input"
+  }
+
+  discover_external_subs() {
+    echo ""
+  }
+
+  local plan
+  plan="$(build_subtitle_plan "dummy.mkv")"
+
+  assert_contains "$plan" "int|1|eng|0|subrip|0"
+  assert_not_contains "$plan" "int|0|eng|0|hdmv_pgs_subtitle|0"
+}
+
+test_plan_keeps_eng_forced_and_normal_slots() {
+  local input
+  input="$(cat tests/fixtures/eng_forced_and_normal.txt)"
+
+  probe_internal_subs() {
+    echo "$input"
+  }
+
+  discover_external_subs() {
+    echo ""
+  }
+
+  local plan
+  plan="$(build_subtitle_plan "dummy.mkv")"
+
+  assert_contains "$plan" "int|0|eng|1|subrip|0"
+  assert_contains "$plan" "int|1|eng|0|subrip|0"
+}
+
 test_plan_external_bitmap_ignored_when_keep0() {
   export KEEP_BITMAP_SUBS=0
 

@@ -36,6 +36,12 @@ Fast validation:
 bash scripts/check-fast.sh
 ```
 
+Milestone-4 parity validation:
+```bash
+./tests/run.sh tests/suite_selection.sh
+./tests/run.sh tests/suite_ffmpeg.sh
+```
+
 Changed-file validation (recommended explicit base ref):
 ```bash
 bash scripts/check-changed.sh HEAD~1

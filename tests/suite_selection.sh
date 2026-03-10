@@ -114,3 +114,16 @@ test_selection_fallback_when_no_wanted_or_forced() {
   assert_not_contains "$output" "-map 0:0" "Fallback should not select lower-ranked non-default track"
   assert_eq "1" "$SUBTITLE_INTERNAL_COUNT" "Fallback should select exactly one track"
 }
+
+test_selection_keeps_eng_forced_and_normal_slots() {
+  local input
+  input="$(cat tests/fixtures/eng_forced_and_normal.txt)"
+
+  select_internal_subtitles "$input"
+
+  local output="${SUBTITLE_SELECTION_MAP_ARGS[*]}"
+
+  assert_contains "$output" "-map 0:0" "Should keep English forced track"
+  assert_contains "$output" "-map 0:1" "Should keep English normal track"
+  assert_eq "2" "$SUBTITLE_INTERNAL_COUNT" "Should select one forced and one normal English track"
+}

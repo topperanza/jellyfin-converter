@@ -24,11 +24,11 @@ Best signal comes from an explicit base ref (example: `HEAD~1`).
 ## What full validation covers
 `scripts/check-full.sh` runs:
 - `bash scripts/check-fast.sh`
-- `./tests/run.sh` (full suite)
+- `./tests/run.sh` (default suite set: `tests/suite_*.sh`)
 - `bash scripts/check_bash32.sh`
 
 Use before major handoff/release-sensitive checkpoints.
 
 ## Expensive or environment-dependent checks
-- Full test suite is broader and slower than fast validation.
+- Default suite-set validation is broader and slower than fast validation.
 - `--self-check` path is dependency-sensitive (`ffmpeg`, `ffprobe`).

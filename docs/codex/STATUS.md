@@ -1,21 +1,21 @@
 # Codex Run Status
 
-_Last updated: 2026-03-10 04:06 UTC_
+_Last updated: 2026-03-10 04:35 UTC_
 
 ## Current task
-- Closed MILESTONE-3 by validating operator-facing runbook/resume guidance, checkpoint evidence, and project-files process alignment.
-- Promoted active milestone tracking to MILESTONE-4.
+- Closed MILESTONE-4 by hardening subtitle-ranking parity coverage and fixing milestone validation command semantics.
+- Captured milestone validation evidence and updated project-files validation wording to match actual runner behavior.
 
 ## Current milestone
-- ID: MILESTONE-4
-- Title: Subtitle ranking parity hardening
-- Goal: reduce policy drift risk between `select_internal_subtitles` and `build_subtitle_plan` by adding focused parity coverage.
-- Completion criteria: parity-focused tests cover aligned ranking outcomes and pass with standard milestone validation.
+- ID: none (awaiting next numbered milestone in `docs/codex/PLAN.md`)
+- Title: plan refresh pending
+- Goal: define the next numbered implementation milestone after MILESTONE-4 closure.
+- Completion criteria: `docs/codex/PLAN.md` and `docs/codex/STATUS.md` agree on the next active milestone.
 
 ## Last completed milestone
-- ID: MILESTONE-3
-- Goal: ensure long-running Codex tasks can be resumed and handed off cleanly.
-- Checkpoint: `.codex/checkpoints/MILESTONE-3.md`
+- ID: MILESTONE-4
+- Goal: reduce policy drift risk between `select_internal_subtitles` and `build_subtitle_plan` with focused parity assertions.
+- Checkpoint: `.codex/checkpoints/MILESTONE-4.md`
 
 ## Additional completed closure (outside numbered plan milestones)
 - ID: MILESTONE-docs-project-files
@@ -23,25 +23,41 @@ _Last updated: 2026-03-10 04:06 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
 
 ## Files touched
-- `.codex/checkpoints/MILESTONE-3.md`
-- `docs/codex/STATUS.md`
+- `tests/run.sh`
+- `tests/suite_selection.sh`
+- `tests/suite_ffmpeg.sh`
+- `tests/fixtures/eng_forced_and_normal.txt`
 - `docs/codex/PLAN.md`
-- `docs/project-files/codex-handoff.md`
+- `docs/codex/RUNBOOK.md`
+- `docs/project-files/validation-summary.md`
+- `.codex/checkpoints/MILESTONE-4.md`
+- `docs/codex/STATUS.md`
 
 ## Commands run
 - `bash scripts/check-fast.sh`
+- `./tests/run.sh tests/suite_selection.sh`
+- `./tests/run.sh tests/suite_ffmpeg.sh`
 - `bash scripts/check-changed.sh HEAD~1`
+- `bash scripts/check-full.sh`
 
 ## Results
-- MILESTONE-3 closure evidence captured with checkpoint, status update, and project-files process alignment update.
-- `docs/codex/PLAN.md` now defines `MILESTONE-4` as the next numbered milestone.
-- Validation passed at 2026-03-10 04:06 UTC: `bash scripts/check-fast.sh` and `bash scripts/check-changed.sh HEAD~1`.
+- MILESTONE-4 parity coverage now includes mirrored scenarios in selection and ffmpeg suites:
+  - default track preference (`eng_default_vs_nondefault`)
+  - text-over-bitmap preference (`eng_text_vs_bitmap`)
+  - forced+normal slot retention (`eng_forced_and_normal`)
+- `tests/run.sh` now accepts multiple explicit patterns, removing command ambiguity for scoped validations.
+- Validation passed at 2026-03-10 04:35 UTC for all milestone commands plus full validation:
+  - `bash scripts/check-fast.sh`
+  - `./tests/run.sh tests/suite_selection.sh`
+  - `./tests/run.sh tests/suite_ffmpeg.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
+  - `bash scripts/check-full.sh`
 
 ## Blockers
 - none
 
 ## Known risks
-- `select_internal_subtitles` and `build_subtitle_plan` have overlapping ranking behavior but separate implementations; future policy changes require synchronized tests in both areas.
+- `select_internal_subtitles` and `build_subtitle_plan` still use separate ranking code paths; future policy changes still require synchronized parity-test updates.
 
 ## Next step
-- Execute MILESTONE-4 with narrow parity-focused test updates and milestone checkpointing.
+- Define and scope the next numbered milestone in `docs/codex/PLAN.md`, then promote it in `docs/codex/STATUS.md` before implementation.

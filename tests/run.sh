@@ -136,26 +136,35 @@ run_test_cmd() {
 # -----------------------------------------------------------------------------
 
 main() {
-  local pattern="${1:-tests/suite_*.sh}"
+  local -a patterns=()
+  if [[ "$#" -gt 0 ]]; then
+    patterns=("$@")
+  else
+    patterns=("tests/suite_*.sh")
+  fi
   
   # Resolve path relative to CWD or script location
   # If the pattern doesn't match anything, bash leaves it as-is.
   # We check if files exist.
   
   local found_files=0
-  for f in $pattern; do
-    if [[ -f "$f" ]]; then
-      found_files=1
-      case "$(basename "$f")" in
-        suite_*.sh) run_suite "$f" ;;
-        test_*.sh) run_script "$f" ;;
-        *) run_suite "$f" ;;
-      esac
-    fi
+  local pattern
+  local f
+  for pattern in "${patterns[@]}"; do
+    for f in $pattern; do
+      if [[ -f "$f" ]]; then
+        found_files=1
+        case "$(basename "$f")" in
+          suite_*.sh) run_suite "$f" ;;
+          test_*.sh) run_script "$f" ;;
+          *) run_suite "$f" ;;
+        esac
+      fi
+    done
   done
 
   if [[ "$found_files" -eq 0 ]]; then
-    echo "No test files found matching: $pattern"
+    echo "No test files found matching: ${patterns[*]}"
     exit 1
   fi
 

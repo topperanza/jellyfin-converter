@@ -53,7 +53,8 @@ Milestone closure rule: before checkpointing, update any affected `docs/project-
 - **Scope / files:** `tests/suite_selection.sh`, `tests/suite_ffmpeg.sh`, optional fixtures under `tests/fixtures/`.
 - **Commands:**
   - `bash scripts/check-fast.sh`
-  - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+  - `./tests/run.sh tests/suite_selection.sh`
+  - `./tests/run.sh tests/suite_ffmpeg.sh`
   - `bash scripts/check-changed.sh HEAD~1`
 - **Completion criteria:** added/updated tests assert aligned ranking outcomes across internal selection and ffmpeg subtitle plan behavior for shared policy scenarios.
 - **Risks / rollback:** fixture overfitting can hide real drift; rollback by removing brittle assertions and retaining only deterministic parity cases.
