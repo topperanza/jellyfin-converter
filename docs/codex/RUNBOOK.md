@@ -25,11 +25,11 @@ bash scripts/codex/maintenance.sh
 6. Most recent `.codex/checkpoints/MILESTONE-<n>.md`
 
 ## 3) Milestone execution loop
-Expected sequence: implement -> validate -> sync required docs -> milestone gate -> checkpoint -> commit/push.
+Expected sequence: implement -> validate -> update required docs via DOC_SYNC_MATRIX.md -> milestone gate -> checkpoint -> commit/push.
 
 1. Confirm active milestone scope from `docs/codex/PLAN.md` (implement).
 2. Run milestone validation commands (validate).
-3. Sync required docs per `docs/codex/DOC_SYNC_MATRIX.md`.
+3. Update required docs via `docs/codex/DOC_SYNC_MATRIX.md`.
 4. Apply milestone gate using milestone contract + DOC_SYNC_MATRIX blocking rules; record pass/follow-ups in `docs/codex/STATUS.md`.
 5. Write/update `.codex/checkpoints/MILESTONE-<n>.md` (checkpoint).
 6. Commit/push.

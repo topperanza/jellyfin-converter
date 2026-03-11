@@ -12,6 +12,12 @@ Stable local CLI for converting common video files into Jellyfin-friendly MKV co
 - [Subtitle Policy & Configuration](docs/subtitles.md)
 - [Security Policy](SECURITY.md)
 
+## Codex control-plane references
+- Milestone plan/status/runbook: `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, `docs/codex/RUNBOOK.md`
+- Documentation sync gate rules: `docs/codex/DOC_SYNC_MATRIX.md`
+- Automation prompt templates (for Codex app copy/paste): `docs/codex/automations/`
+- Repo-native Codex skills: `.agents/skills/`
+
 ## Supported platforms
 - macOS and Linux (both release-blocking in CI)
 - Bash 3.2+
