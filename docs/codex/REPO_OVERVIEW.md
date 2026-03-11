@@ -33,9 +33,10 @@
 Milestone completion is determined by the milestone contract plus the blocking rules in docs/codex/DOC_SYNC_MATRIX.md. Non-blocking documentation hygiene items should be recorded as follow-ups and must not automatically block advancement.
 
 ## Standard validation order
-1. `bash scripts/check-fast.sh`
-2. `bash scripts/check-changed.sh` (only when present/useful for changed scope)
-3. `bash scripts/check-full.sh`
+1. Run narrow milestone-specific validation first.
+2. `bash scripts/check-fast.sh`
+3. `bash scripts/check-changed.sh` (only when present/useful for changed scope)
+4. `bash scripts/check-full.sh` (only if justified)
 
 ## High-risk areas
 - ffmpeg command generation
