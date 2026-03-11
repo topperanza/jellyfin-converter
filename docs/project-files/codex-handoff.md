@@ -2,6 +2,7 @@
 
 ## How Codex should work safely here
 - Follow `AGENTS.md` and `docs/codex/RUNBOOK.md` before editing.
+- Treat `docs/codex/REPO_OVERVIEW.md` + `docs/codex/DOC_SYNC_MATRIX.md` as the canonical interpretation layer for milestone gating and doc-sync decisions.
 - Keep changes milestone-scoped, reviewable, and deterministic.
 - Prefer repo-native scripts over ad-hoc commands.
 - Do not modify unrelated scaffolding.
@@ -13,7 +14,7 @@ Default sequence:
 3. Implement one coherent milestone
 4. Validate with repo scripts
 5. Update `docs/codex/STATUS.md`
-6. Update affected `docs/project-files/*`
+6. Sync required docs per `docs/codex/DOC_SYNC_MATRIX.md` (project-files updates only when matrix says material)
 7. Checkpoint (`.codex/checkpoints/MILESTONE-<n>.md`)
 
 ## Milestone ID and resume policy
