@@ -309,6 +309,36 @@ collect_subtitle() {
 SUBTITLE_SELECTION_MAP_ARGS=()
 SUBTITLE_INTERNAL_COUNT=0
 
+subtitle_policy_rank() {
+  local mapped_lang="$1"
+  local is_forced="$2"
+  local is_default="$3"
+  local is_commentary="$4"
+  local codec_label="$5"
+
+  local lang_score=2
+  [[ "$mapped_lang" == "eng" ]] && lang_score=0
+  [[ "$mapped_lang" == "ita" ]] && lang_score=1
+
+  local forced_score=1
+  [[ "$is_forced" -eq 1 ]] && forced_score=0
+
+  local default_score=1
+  [[ "$is_default" -eq 1 ]] && default_score=0
+
+  local codec_score=1
+  if is_text_codec "$codec_label"; then
+    codec_score=0
+  elif is_bitmap_codec "$codec_label" || is_bitmap_sidecar_ext "$codec_label"; then
+    codec_score=1
+  fi
+
+  local commentary_score=0
+  [[ "$is_commentary" -eq 1 ]] && commentary_score=-1
+
+  echo $(( commentary_score*10000 + lang_score*1000 + forced_score*100 + default_score*10 + codec_score ))
+}
+
 select_internal_subtitles() {
   local subtitle_info="$1"
 
@@ -331,19 +361,8 @@ select_internal_subtitles() {
       local is_commentary=0; is_commentary_title "$sub_title" && is_commentary=1
       local is_forced=0; [[ "${sub_forced:-0}" =~ ^[0-9]+$ ]] && [[ "${sub_forced:-0}" -gt 0 ]] && is_forced=1
       local is_default=0; [[ "${sub_default:-0}" =~ ^[0-9]+$ ]] && [[ "${sub_default:-0}" -gt 0 ]] && is_default=1
-      local text_flag=0; is_text_codec "$sub_codec" && text_flag=1
-      local bitmap_flag=0; is_bitmap_codec "$sub_codec" && bitmap_flag=1
-      local lang_score=2
-      [[ "$mapped_lang" == "eng" ]] && lang_score=0
-      [[ "$mapped_lang" == "ita" ]] && lang_score=1
-      local forced_score=$(( is_forced == 1 ? 0 : 1 ))
-      local default_score=$(( is_default == 1 ? 0 : 1 ))
-      local codec_score=1
-      [[ "$text_flag" -eq 1 ]] && codec_score=0
-      [[ "$bitmap_flag" -eq 1 ]] && codec_score=1
-      local commentary_score=0
-      [[ "$is_commentary" -eq 1 ]] && commentary_score=-1
-      local rank=$(( commentary_score*10000 + lang_score*1000 + forced_score*100 + default_score*10 + codec_score ))
+      local rank
+      rank="$(subtitle_policy_rank "$mapped_lang" "$is_forced" "$is_default" "$is_commentary" "$sub_codec")"
       local display_lang="$mapped_lang"; [[ -z "$display_lang" && -n "$sub_lang" ]] && display_lang="$sub_lang"; [[ -z "$display_lang" ]] && display_lang="unknown"
       local codec_label="$sub_codec"; [[ -z "$codec_label" ]] && codec_label="unknown"
       ranks_buf+="${rank}|${sub_stream_idx}|${display_lang}|${codec_label}|${is_forced}|${is_default}|${is_commentary}"$'\n'
@@ -601,6 +620,9 @@ build_subtitle_plan() {
     
     # Calculate Score (Lower is better)
     local score=0
+    local policy_rank
+    policy_rank="$(subtitle_policy_rank "$lang" "$forced" "$def" "$comm" "$codec")"
+    score=$((score + policy_rank))
     local source_rank=1
     local id_key=""
     

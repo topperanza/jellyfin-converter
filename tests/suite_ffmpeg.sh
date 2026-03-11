@@ -157,6 +157,26 @@ test_plan_keeps_eng_forced_and_normal_slots() {
   assert_contains "$plan" "int|1|eng|0|subrip|0"
 }
 
+test_plan_prefers_default_within_forced_slot() {
+  local input
+  input=$'0|subrip|eng|English forced alt|0|1|0\n1|subrip|eng|English forced default|1|1|0\n2|subrip|eng|English normal|0|0|0'
+
+  probe_internal_subs() {
+    echo "$input"
+  }
+
+  discover_external_subs() {
+    echo ""
+  }
+
+  local plan
+  plan="$(build_subtitle_plan "dummy.mkv")"
+
+  assert_contains "$plan" "int|1|eng|1|subrip|0"
+  assert_not_contains "$plan" "int|0|eng|1|subrip|0"
+  assert_contains "$plan" "int|2|eng|0|subrip|0"
+}
+
 test_plan_external_bitmap_ignored_when_keep0() {
   export KEEP_BITMAP_SUBS=0
 
