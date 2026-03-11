@@ -1,14 +1,12 @@
 # Codex Run Status
 
-_Last updated: 2026-03-11 15:06 UTC_
+_Last updated: 2026-03-11 08:56 UTC_
 
 ## Current task
-- Ran final local verification for adaptation closure readiness across control-plane docs, skills, automations, setup/maintenance scripts, and validation entrypoints.
-- Applied minimal last-mile control-plane coherence fix so AGENTS/REPO_OVERVIEW workflow sequence matches RUNBOOK (explicit blocker-closure + commit/push sequencing).
-- Synced downstream `docs/project-files/codex-handoff.md` because DOC_SYNC_MATRIX marks material operator-workflow handoff updates as required.
-- Re-verified local operational readiness with setup, maintenance, targeted subtitle suites, and full validation.
-
-
+- Completed final control-plane closure tracking for the documentation patch set.
+- Recorded RUNBOOK routing + automation/worktree hygiene additions as operator workflow updates.
+- Recorded new `docs/codex/CLOUD_ENV_CHECKLIST.md` and `docs/codex/usage-prompts/*` pack as the current closure scope.
+- Re-ran prompt-pack structure validation plus `check-fast` and `check-changed` for final commit/push readiness evidence.
 
 ## Current milestone
 - ID: none (awaiting activation of next numbered milestone)
@@ -25,44 +23,50 @@ _Last updated: 2026-03-11 15:06 UTC_
 - ID: MILESTONE-docs-project-files
 - Goal: keep canonical low-churn project summaries and milestone sync guidance aligned.
 - Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
+- ID: MILESTONE-control-plane-prompt-pack
+- Goal: close control-plane patch tracking for RUNBOOK routing, cloud checklist, and usage-prompts pack with fresh validation evidence.
+- Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
 
 ## Files touched
-- `AGENTS.md`
-- `docs/codex/PLAN.md`
-- `docs/codex/REPO_OVERVIEW.md`
+- `docs/codex/RUNBOOK.md`
+- `docs/codex/CLOUD_ENV_CHECKLIST.md`
+- `docs/codex/usage-prompts/00-README-usage-order.md`
+- `docs/codex/usage-prompts/01-next-milestone-planner.md`
+- `docs/codex/usage-prompts/02-milestone-implementation.md`
+- `docs/codex/usage-prompts/03-milestone-gate.md`
+- `docs/codex/usage-prompts/04-blocker-patch.md`
+- `docs/codex/usage-prompts/05-blocker-closure-check.md`
+- `docs/codex/usage-prompts/06-final-local-verification.md`
+- `docs/codex/usage-prompts/07-commit-push-after-pass.md`
+- `docs/codex/usage-prompts/08-full-repo-audit-recovery.md`
+- `docs/codex/usage-prompts/09-release-prep.md`
 - `docs/codex/STATUS.md`
-- `docs/project-files/codex-handoff.md`
-
-
+- `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
 
 ## Commands run
-- `bash scripts/codex/setup.sh`
-- `bash scripts/codex/maintenance.sh`
-- `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
-- `bash scripts/check-fast.sh`
-- `bash scripts/check-changed.sh HEAD~1`
-- `bash scripts/check-full.sh`
-
-
+- Historical closure evidence:
+  - `bash scripts/check-fast.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
+  - `bash scripts/check-full.sh`
+- Current closure re-validation:
+  - `expected='00-README-usage-order.md ... 09-release-prep.md'; actual="$(find docs/codex/usage-prompts -maxdepth 1 -type f -exec basename {} \; | sort)"; [ "$expected" = "$actual" ]; for f in docs/codex/usage-prompts/*.md; do rg -q '^# ' "$f"; rg -q '^When to use:' "$f"; rg -q '^Run in:' "$f"; rg -q '^```text' "$f"; done`
+  - `bash scripts/check-fast.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
 
 ## Results
-- Confirmed `.agents/skills/` contains all four required skills with frontmatter and `allow_implicit_invocation: false` policy files.
-- Confirmed `docs/codex/automations/` contains the required three audit templates plus README, and wording correctly states automations are app-managed prompt templates (not repo-loaded schedules).
-- Updated AGENTS/REPO_OVERVIEW workflow sequencing to align with RUNBOOK while preserving repo-specific media-conversion safety guidance.
-- Closure verification rerun: control-plane wording is consistent across AGENTS/RUNBOOK/REPO_OVERVIEW/PLAN and adaptation audit status is **FULLY ADAPTED** with high confidence.
-- Validation passed:
-  - Pass: `bash scripts/codex/setup.sh`
-  - Pass: `bash scripts/codex/maintenance.sh`
-  - Pass: `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+- Historical context:
+  - Pass: prior final QA closure run included `bash scripts/check-fast.sh`, `bash scripts/check-changed.sh HEAD~1`, and `bash scripts/check-full.sh`.
+- Current closure run:
+  - Pass: usage-prompts filename + structure validation command.
   - Pass: `bash scripts/check-fast.sh`
   - Pass: `bash scripts/check-changed.sh HEAD~1`
-  - Pass: `bash scripts/check-full.sh`
+- Control-plane patch tracking for STATUS/checkpoint is now in sync for this documentation closure.
 
 ## Blockers
 - none
 
 ## Known risks
-- Shared helper misuse risk remains if future subtitle policy edits bypass `subtitle_policy_rank`; parity tests should be kept mirrored.
+- None added by this docs/control-plane closure.
 
 ## Next step
-- Define and activate the next numbered milestone in `docs/codex/PLAN.md` before implementation.
+- Repo passes final QA closure tracking and is ready for the commit/push prompt.

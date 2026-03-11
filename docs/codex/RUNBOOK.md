@@ -43,6 +43,30 @@ bash scripts/codex/maintenance.sh
 - Active implementation work must use numbered IDs from `docs/codex/PLAN.md` (`MILESTONE-<n>` in plan order).
 - Exceptional documentation-only closures may use non-numbered IDs (for example `MILESTONE-docs-project-files`) but must be listed in `docs/codex/STATUS.md` as additional completed closures, not as the current active milestone.
 
+## 3b) Codex routing (Cloud vs Local app)
+Use **Codex Cloud** for:
+- next milestone planning
+- normal milestone implementation
+- milestone gate
+- blocker-closure checks
+- repo-wide audits
+- docs/control-plane work
+- release prep review
+
+Use **Codex Local app** for:
+- environment-sensitive fixes
+- setup / maintenance / validation script work
+- hardware/toolchain/platform-sensitive verification
+- final local verification
+- commit/push
+
+## 3c) Automation/worktree hygiene
+- Automations that run against this git repo execute in worktrees.
+- Frequent schedules can accumulate many worktrees and stale runs.
+- Review and archive old automation runs regularly.
+- Avoid overly aggressive schedules; keep cadence intentional.
+- Manually test prompts before enabling recurring schedules.
+
 ## 4) Validation command set
 Fast validation:
 ```bash
