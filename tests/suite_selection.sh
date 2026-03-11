@@ -127,3 +127,17 @@ test_selection_keeps_eng_forced_and_normal_slots() {
   assert_contains "$output" "-map 0:1" "Should keep English normal track"
   assert_eq "2" "$SUBTITLE_INTERNAL_COUNT" "Should select one forced and one normal English track"
 }
+
+test_selection_prefers_default_within_forced_slot() {
+  local input
+  input=$'0|subrip|eng|English forced alt|0|1|0\n1|subrip|eng|English forced default|1|1|0\n2|subrip|eng|English normal|0|0|0'
+
+  select_internal_subtitles "$input"
+
+  local output="${SUBTITLE_SELECTION_MAP_ARGS[*]}"
+
+  assert_contains "$output" "-map 0:1" "Should keep default English forced track"
+  assert_not_contains "$output" "-map 0:0" "Should skip non-default English forced track"
+  assert_contains "$output" "-map 0:2" "Should keep English normal track"
+  assert_eq "2" "$SUBTITLE_INTERNAL_COUNT" "Should select one forced and one normal English track"
+}
