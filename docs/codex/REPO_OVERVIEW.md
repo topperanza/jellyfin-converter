@@ -55,5 +55,6 @@ Milestone completion is determined by the milestone contract plus the blocking r
 4. Validate in standard order.
 5. Sync required docs using `docs/codex/DOC_SYNC_MATRIX.md`.
 6. Apply milestone gate + record status/follow-ups in `docs/codex/STATUS.md`.
-7. Write/update checkpoint (`.codex/checkpoints/MILESTONE-<id>.md`).
-8. Commit/push.
+7. If blocked, fix blockers only and run a targeted blocker-closure check.
+8. Write/update checkpoint (`.codex/checkpoints/MILESTONE-<id>.md`).
+9. Commit/push.

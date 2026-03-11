@@ -13,9 +13,11 @@ Default sequence:
 2. Confirm/update `docs/codex/PLAN.md`
 3. Implement one coherent milestone
 4. Validate with repo scripts
-5. Update `docs/codex/STATUS.md`
-6. Sync required docs per `docs/codex/DOC_SYNC_MATRIX.md` (project-files updates only when matrix says material)
-7. Checkpoint (`.codex/checkpoints/MILESTONE-<n>.md`)
+5. Sync required docs per `docs/codex/DOC_SYNC_MATRIX.md` (project-files updates only when matrix says material)
+6. Apply milestone gate and record pass/follow-ups in `docs/codex/STATUS.md`
+7. If blocked, fix blockers only and run a targeted blocker-closure check
+8. Checkpoint (`.codex/checkpoints/MILESTONE-<n>.md`)
+9. Commit/push after gate is safe to move on
 
 ## Milestone ID and resume policy
 - Active implementation work must use numbered milestones from `docs/codex/PLAN.md` (`MILESTONE-<n>` in plan order).

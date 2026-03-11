@@ -35,7 +35,9 @@ Run validation in this order unless the task explicitly requires otherwise:
 4. Run milestone validation
 5. Update required docs per `docs/codex/DOC_SYNC_MATRIX.md`
 6. Apply milestone gate and record pass/follow-ups in `docs/codex/STATUS.md`
-7. Checkpoint clearly before stopping
+7. If blocked, fix blockers only and run a targeted blocker-closure check
+8. Checkpoint clearly before stopping
+9. Commit/push after gate is safe to move on
 
 ## Repo-specific invariants
 - Source of truth:

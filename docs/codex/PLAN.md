@@ -6,6 +6,12 @@ _Last refreshed: 2026-03-10_
 
 Milestone closure rule: milestone completion is determined by the milestone contract plus blocking rules in `docs/codex/DOC_SYNC_MATRIX.md`; record non-blocking documentation hygiene as follow-ups without blocking advancement.
 
+## Canonical validation order (applies to every milestone)
+1. Run narrow milestone-specific validation first.
+2. Run `bash scripts/check-fast.sh`.
+3. Run `bash scripts/check-changed.sh` if present and relevant.
+4. Run `bash scripts/check-full.sh` only if justified by changed scope/risk.
+
 ### Milestone 0 (ID: MILESTONE-0) — Repo review + plan confirmation
 - **Objective:** Confirm current health, validation entrypoints, and codex scaffolding baseline.
 - **Scope / files:** `AGENTS.md`, `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, `.codex/checkpoints/MILESTONE-0.md`.
