@@ -1,11 +1,12 @@
 # Codex Run Status
 
-_Last updated: 2026-03-10 09:38 UTC_
+_Last updated: 2026-03-10 10:05 UTC_
 
 ## Current task
-- Updated Codex scaffolding to make milestone gating explicit via a blocking/non-blocking doc sync matrix.
-- Added `docs/codex/REPO_OVERVIEW.md` and `docs/codex/DOC_SYNC_MATRIX.md` as control-plane references.
-- Synced milestone-completion and docs/project-files source-of-truth rules across `AGENTS.md` and `docs/codex/RUNBOOK.md`.
+- Refined Codex control-plane documentation to provide one stable repo-overview + doc-sync interpretation layer for future milestones.
+- Expanded `docs/codex/REPO_OVERVIEW.md` with runtime model, subsystem map, milestone rules, invariants, validation order, and operator workflow.
+- Reworked `docs/codex/DOC_SYNC_MATRIX.md` into a deterministic change-type matrix with explicit blocking vs non-blocking rules.
+- Updated runbook/handoff references so operators treat overview + matrix as canonical interpretation and follow the same execution sequence.
 
 ## Current milestone
 - ID: MILESTONE-5
@@ -24,12 +25,11 @@ _Last updated: 2026-03-10 09:38 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
 
 ## Files touched
-- `AGENTS.md`
-- `docs/codex/DOC_SYNC_MATRIX.md`
-- `docs/codex/PLAN.md`
 - `docs/codex/REPO_OVERVIEW.md`
+- `docs/codex/DOC_SYNC_MATRIX.md`
 - `docs/codex/RUNBOOK.md`
 - `docs/codex/STATUS.md`
+- `docs/project-files/codex-handoff.md`
 
 ## Commands run
 - `bash scripts/check-fast.sh`
@@ -37,9 +37,9 @@ _Last updated: 2026-03-10 09:38 UTC_
 - `bash scripts/check-full.sh`
 
 ## Results
-- Added explicit control-plane docs for repo overview and documentation gate policy: `docs/codex/REPO_OVERVIEW.md`, `docs/codex/DOC_SYNC_MATRIX.md`.
-- AGENTS and RUNBOOK now use the same milestone-completion rule and docs/project-files downstream-sync rule.
-- Milestone execution loop in RUNBOOK now follows: implement → validate → required docs via DOC_SYNC_MATRIX → milestone gate → checkpoint → commit/push.
+- Established a stable control-plane interpretation layer in `docs/codex/REPO_OVERVIEW.md` + `docs/codex/DOC_SYNC_MATRIX.md` with explicit gate logic.
+- Preserved milestone execution sequence in runbook as: implement -> validate -> sync required docs -> milestone gate -> checkpoint -> commit/push.
+- Synced project handoff guidance to point to overview/matrix as canonical for future Codex resume flows.
 - Validation command results:
   - Pass: `bash scripts/check-fast.sh`
   - Pass: `bash scripts/check-changed.sh HEAD~1`
