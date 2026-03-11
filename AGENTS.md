@@ -19,9 +19,10 @@ This repository is Codex-ready and should be worked in using small, reviewable, 
 
 ## Validation order
 Run validation in this order unless the task explicitly requires otherwise:
-1. `bash scripts/check-fast.sh`
-2. `bash scripts/check-changed.sh` (only if present and useful)
-3. `bash scripts/check-full.sh`
+1. narrow milestone-specific validation first
+2. `bash scripts/check-fast.sh`
+3. `bash scripts/check-changed.sh` (only if present and useful)
+4. `bash scripts/check-full.sh` (only if justified)
 
 ## Codex environment
 - setup: `bash scripts/codex/setup.sh`

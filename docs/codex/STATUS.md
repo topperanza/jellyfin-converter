@@ -1,11 +1,12 @@
 # Codex Run Status
 
-_Last updated: 2026-03-11 00:46 UTC_
+_Last updated: 2026-03-11 01:35 UTC_
 
 ## Current task
-- Added repo-native Codex skills under `.agents/skills/` for milestone review, next-milestone planning, project-files sync audit, and commit/push tracking.
-- Added `docs/codex/automations/` prompt templates for Codex app setup (weekly milestone drift audit, weekly project-files sync audit, pre-release truth audit).
-- Updated control-plane docs integration in `README.md` and `docs/codex/RUNBOOK.md` for automation/skill discoverability and required sequence wording.
+- Performed template rollout + adaptation audit against locked baseline requirements (v1.0.0 intent) with conservative merge behavior.
+- Patched control-plane workflow wording to require milestone-specific validation before repo-wide checks.
+- Verified required shared skills/automation templates are present and explicit-invocation safe.
+
 
 
 ## Current milestone
@@ -25,36 +26,25 @@ _Last updated: 2026-03-11 00:46 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
 
 ## Files touched
-- `.agents/skills/mtt-repo-milestone-review/SKILL.md`
-- `.agents/skills/mtt-repo-milestone-review/agents/openai.yaml`
-- `.agents/skills/mtt-next-milestone-planner/SKILL.md`
-- `.agents/skills/mtt-next-milestone-planner/agents/openai.yaml`
-- `.agents/skills/mtt-project-files-sync-audit/SKILL.md`
-- `.agents/skills/mtt-project-files-sync-audit/agents/openai.yaml`
-- `.agents/skills/mtt-commit-push-tracker/SKILL.md`
-- `.agents/skills/mtt-commit-push-tracker/agents/openai.yaml`
-- `docs/codex/automations/README.md`
-- `docs/codex/automations/weekly-milestone-drift-audit.md`
-- `docs/codex/automations/weekly-project-files-sync-audit.md`
-- `docs/codex/automations/pre-release-truth-audit.md`
-- `README.md`
+- `AGENTS.md`
 - `docs/codex/RUNBOOK.md`
 - `docs/codex/STATUS.md`
+
 
 
 ## Commands run
 - `bash scripts/check-fast.sh`
 - `bash scripts/check-changed.sh HEAD~1`
+- `bash scripts/check-full.sh`
+
 
 
 ## Results
-- Added four focused instruction-only repo skills with explicit trigger/non-trigger rules and explicit invocation policy (`allow_implicit_invocation: false`).
-- Added Codex app automation setup docs and paste-ready prompt templates without introducing unsupported scheduled-file formats.
-- RUNBOOK sequence now explicitly states: implement -> validate -> update required docs via DOC_SYNC_MATRIX.md -> milestone gate -> checkpoint -> commit/push.
-
+- Confirmed `.agents/skills/` contains all four required skills with frontmatter and `allow_implicit_invocation: false` policy files.
+- Confirmed `docs/codex/automations/` contains the required three audit templates plus README, and wording correctly states automations are app-managed prompt templates (not repo-loaded schedules).
+- Updated AGENTS and RUNBOOK validation/workflow sequencing to the locked rollout workflow while preserving repo-specific media-conversion safety guidance.
+- Validation passed:
   - Pass: `bash scripts/check-fast.sh`
-  - Pass: `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
-  - Pass: `bash scripts/check-changed.sh`
   - Pass: `bash scripts/check-changed.sh HEAD~1`
   - Pass: `bash scripts/check-full.sh`
 
