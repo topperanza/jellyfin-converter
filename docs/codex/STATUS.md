@@ -1,6 +1,6 @@
 # Codex Run Status
 
-_Last updated: 2026-03-11 01:35 UTC_
+_Last updated: 2026-03-11 02:05 UTC_
 
 ## Current task
 - Performed template rollout + adaptation audit against locked baseline requirements (v1.0.0 intent) with conservative merge behavior.
@@ -28,6 +28,7 @@ _Last updated: 2026-03-11 01:35 UTC_
 ## Files touched
 - `AGENTS.md`
 - `docs/codex/RUNBOOK.md`
+- `docs/codex/REPO_OVERVIEW.md`
 - `docs/codex/STATUS.md`
 
 
