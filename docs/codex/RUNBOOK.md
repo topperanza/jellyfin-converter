@@ -25,14 +25,19 @@ bash scripts/codex/maintenance.sh
 6. Most recent `.codex/checkpoints/MILESTONE-<n>.md`
 
 ## 3) Milestone execution loop
-Expected sequence: implement -> validate -> update required docs via DOC_SYNC_MATRIX.md -> milestone gate -> checkpoint -> commit/push.
-
-1. Confirm active milestone scope from `docs/codex/PLAN.md` (implement).
-2. Run milestone validation commands (validate).
-3. Update required docs via `docs/codex/DOC_SYNC_MATRIX.md`.
-4. Apply milestone gate using milestone contract + DOC_SYNC_MATRIX blocking rules; record pass/follow-ups in `docs/codex/STATUS.md`.
-5. Write/update `.codex/checkpoints/MILESTONE-<n>.md` (checkpoint).
-6. Commit/push.
+1. Identify milestone contract in `docs/codex/PLAN.md`.
+2. Implement one milestone-sized change.
+3. Run narrow milestone-specific validation first.
+4. Run repo validation:
+   - `bash scripts/check-fast.sh`
+   - `bash scripts/check-changed.sh` (if present and relevant)
+   - `bash scripts/check-full.sh` (if justified)
+5. Update required docs via `docs/codex/DOC_SYNC_MATRIX.md`.
+6. Run milestone gate using milestone contract + DOC_SYNC_MATRIX blocking rules and record pass/follow-ups in `docs/codex/STATUS.md`.
+7. If blocked, fix blockers only.
+8. Run targeted blocker-closure check.
+9. Checkpoint by writing/updating `.codex/checkpoints/MILESTONE-<n>.md`.
+10. Commit/push.
 
 ## 3a) Milestone ID policy
 - Active implementation work must use numbered IDs from `docs/codex/PLAN.md` (`MILESTONE-<n>` in plan order).
