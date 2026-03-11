@@ -1,0 +1,7 @@
+interface:
+  display_name: MTT Repo Milestone Review
+  short_description: Gate the active milestone against PLAN and DOC_SYNC_MATRIX blocking rules.
+  default_prompt: |
+    Perform a milestone gate review for this repository using $mtt-repo-milestone-review.
+policy:
+  allow_implicit_invocation: false

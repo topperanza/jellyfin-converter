@@ -1,0 +1,7 @@
+interface:
+  display_name: MTT Project Files Sync Audit
+  short_description: Audit docs/project-files export readiness for ChatGPT Project sync.
+  default_prompt: |
+    Run $mtt-project-files-sync-audit and report readiness plus per-file status.
+policy:
+  allow_implicit_invocation: false

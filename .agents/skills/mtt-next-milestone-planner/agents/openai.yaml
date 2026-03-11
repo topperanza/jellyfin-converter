@@ -1,0 +1,7 @@
+interface:
+  display_name: MTT Next Milestone Planner
+  short_description: Plan the next single milestone only after SAFE TO MOVE ON.
+  default_prompt: |
+    Use $mtt-next-milestone-planner to propose the next milestone and a paste-ready implementation prompt.
+policy:
+  allow_implicit_invocation: false
