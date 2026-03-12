@@ -1,4 +1,4 @@
-\# Codex Prompt Pack v1.1.0 — Usage Order
+\# Codex Prompt Pack v1.2.0 — Usage Order
 
 This folder contains the canonical Codex workflow prompts for this repository.
 

@@ -17,7 +17,7 @@
 - Conversion primitives: `scripts/lib/ffmpeg.sh`, `scripts/lib/ffprobe.sh`, `scripts/lib/media_filters.sh`
 - IO and process guards: `scripts/lib/io.sh`, `scripts/lib/process.sh`, `scripts/lib/compat.sh`
 - Validation + gates: `scripts/check-*.sh`, `tests/` suites and fixtures
-- Codex control plane: `docs/codex/PLAN.md`, `STATUS.md`, `RUNBOOK.md`, `DOC_SYNC_MATRIX.md`
+- Codex control plane: `docs/codex/PLAN.md`, `STATUS.md`, `RUNBOOK.md`, `WORKFLOW_VERSION.md`, `DOC_SYNC_MATRIX.md`, and `scripts/codex/check-workflow-conformance.sh`
 
 ## Safety model and invariants
 - Originals remain untouched by default; destructive flows are explicit and gated.
