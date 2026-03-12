@@ -1,6 +1,6 @@
 # Codex Run Status
 
-_Last updated: 2026-03-12 00:00 UTC_
+_Last updated: 2026-03-12 01:00 UTC_
 
 ## Current task
 - Completed hardened control-plane rollout with minimal repository-native changes.
@@ -19,6 +19,9 @@ _Last updated: 2026-03-12 00:00 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-hardening-rollout.md`
 
 ## Additional completed closure (outside numbered plan milestones)
+- ID: MILESTONE-control-plane-hardening-followups
+- Goal: implement hardening follow-ups for CI conformance gate, legacy prompt-name checkpoint annotation, and stronger prompt-pack schema checks.
+- Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-hardening-followups.md`
 - ID: MILESTONE-5
 - Goal: reduce future drift by consolidating shared subtitle ranking policy.
 - Checkpoint: `.codex/checkpoints/MILESTONE-5.md`
@@ -30,15 +33,11 @@ _Last updated: 2026-03-12 00:00 UTC_
 - Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
 
 ## Files touched
+- `.github/workflows/ci.yml`
 - `scripts/codex/check-workflow-conformance.sh`
-- `scripts/codex/setup.sh`
-- `scripts/codex/maintenance.sh`
-- `docs/codex/WORKFLOW_VERSION.md`
-- `docs/codex/RUNBOOK.md`
-- `docs/codex/REPO_OVERVIEW.md`
-- `docs/codex/usage-prompts/0000-README-usage-order.md`
+- `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
+- `.codex/checkpoints/MILESTONE-control-plane-hardening-followups.md`
 - `docs/codex/STATUS.md`
-- `.codex/checkpoints/MILESTONE-control-plane-hardening-rollout.md`
 
 ## Commands run
 - `bash scripts/codex/check-workflow-conformance.sh`
@@ -46,7 +45,8 @@ _Last updated: 2026-03-12 00:00 UTC_
 - `bash scripts/check-changed.sh HEAD~1`
 
 ## Results
-- Pass: conformance check script validates required codex docs, canonical prompt path, release prompt presence, and anti-loop guardrails.
+- Pass: CI workflow now runs `bash scripts/codex/check-workflow-conformance.sh` as an explicit hard gate.
+- Pass: conformance check script validates canonical prompt-pack filename/schema set plus existing control-plane guardrails.
 - Pass: `bash scripts/check-fast.sh`
 - Pass: `bash scripts/check-changed.sh HEAD~1`
 
