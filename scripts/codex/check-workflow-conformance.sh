@@ -27,6 +27,13 @@ need_pattern() {
   fi
 }
 
+fail_on_legacy_prompt_refs() {
+  local legacy="$1"
+  local hits
+  hits="$({ rg -n --glob '*.md' --glob '!docs/codex/usage-prompts/**' --fixed-strings "$legacy" README.md docs/codex .codex/checkpoints/README.md 2>/dev/null || true; } | sed '/^$/d')"
+  [[ -z "$hits" ]] || fail "legacy prompt reference detected ($legacy):\n$hits"
+}
+
 
 echo "==> Codex workflow conformance"
 echo "CODEX_DOCS_DIR=$CODEX_DOCS_DIR"
@@ -92,5 +99,10 @@ need_pattern 'release-prep review' "$PROMPTS_DIR/0000-README-usage-order.md" || 
 need_pattern 'tag \+ release' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing tag+release step"
 need_pattern 'Full repo audit is recovery-only' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing recovery-only audit guardrail"
 need_pattern 'This is a blocker-closure check, not a fresh milestone gate and not a full repo audit' "$PROMPTS_DIR/05-blocker-closure-check.md" || fail "blocker-closure scope guardrail missing"
+
+fail_on_legacy_prompt_refs 'docs/codex/usage-prompts/00-README-usage-order.md'
+fail_on_legacy_prompt_refs 'docs/codex/usage-prompts/07-commit-push-after-pass.md'
+fail_on_legacy_prompt_refs 'docs/codex/usage-prompts/08-full-repo-audit-recovery.md'
+fail_on_legacy_prompt_refs 'docs/codex/usage-prompts/09-release-prep.md'
 
 echo "Conformance checks passed"

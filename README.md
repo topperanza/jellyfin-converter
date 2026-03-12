@@ -15,6 +15,7 @@ Stable local CLI for converting common video files into Jellyfin-friendly MKV co
 ## Codex control-plane references
 - Milestone plan/status/runbook: `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, `docs/codex/RUNBOOK.md`
 - Documentation sync gate rules: `docs/codex/DOC_SYNC_MATRIX.md`
+- Canonical Codex prompt pack (`PROMPTS_DIR`): `docs/codex/usage-prompts`
 - Automation prompt templates (for Codex app copy/paste): `docs/codex/automations/`
 - Repo-native Codex skills: `.agents/skills/`
 

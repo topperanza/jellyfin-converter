@@ -1,6 +1,6 @@
 # Codex Long-Run Plan (Phase: workflow hardening + subtitle pipeline readiness)
 
-_Last refreshed: 2026-03-10_
+_Last refreshed: 2026-03-12_
 
 ## Milestone sequence
 
@@ -77,6 +77,19 @@ Milestone closure rule: milestone completion is determined by the milestone cont
 - **Completion criteria:** shared ranking helper/path is used for both internal selection and subtitle-plan construction, parity scenarios remain green, and no regression is observed in existing subtitle fixture coverage.
 - **Risks / rollback:** ranking-policy merge can introduce subtle ordering regressions; rollback by reverting consolidation changes and retaining parity tests that expose divergence.
 - **Checkpoint update:** record consolidation scope, touched ranking call sites, command evidence, unresolved policy questions, and explicit next-step owner prompt.
+
+### Milestone 6 (ID: MILESTONE-6) — Control-plane follow-up hardening cleanup
+- **Objective:** Close non-blocking hardening follow-ups by reducing prompt-path discoverability drift and adding lightweight doc-level prompt-reference conformance checks.
+- **Scope / files:** `README.md`, `docs/project-files/validation-summary.md`, `scripts/codex/check-workflow-conformance.sh`, `docs/codex/WORKFLOW_VERSION.md`, `.codex/checkpoints/README.md`, `docs/codex/STATUS.md`, `.codex/checkpoints/MILESTONE-6.md`.
+- **Commands:**
+  - `bash scripts/codex/check-workflow-conformance.sh`
+  - `bash scripts/check-fast.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
+  - `git ls-remote --tags origin`
+  - `gh release list`
+- **Completion criteria:** canonical prompt-pack path is explicitly documented in README, downstream validation summary reflects milestone-specific-first ordering, conformance script checks for legacy prompt-name references in current control-plane docs, and remote release/tag evidence is captured (or explicitly recorded as not evidenced with command output).
+- **Risks / rollback:** docs/script-only risk; rollback by reverting milestone-local control-plane changes.
+- **Checkpoint update:** record commands, pass/fail/skip evidence, and residual risks in `docs/codex/STATUS.md` and `.codex/checkpoints/MILESTONE-6.md`.
 
 ## Preferred validation after each milestone
 ```bash
