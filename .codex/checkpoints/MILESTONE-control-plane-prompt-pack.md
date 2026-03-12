@@ -19,6 +19,12 @@
 - `docs/codex/STATUS.md`
 - `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
 
+
+## Legacy naming note (historical context)
+- This checkpoint predates prompt-pack filename normalization completed in `MILESTONE-control-plane-hardening-rollout`.
+- The prompt filenames listed in this file are historical names from that run and are retained for audit history only.
+- Canonical prompt filenames and routing are enforced by `scripts/codex/check-workflow-conformance.sh` and documented in `docs/codex/WORKFLOW_VERSION.md`.
+
 ## Commands run
 - Historical closure evidence:
   - `bash scripts/check-fast.sh`

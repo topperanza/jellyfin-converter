@@ -72,6 +72,10 @@ jobs:
         run: |
           ./scripts/check_action_pinning.sh
 
+      - name: Codex workflow conformance (hard gate)
+        run: |
+          bash scripts/codex/check-workflow-conformance.sh
+
       - name: Run Tests
         run: |
           if [ -x "./tests/run.sh" ]; then
