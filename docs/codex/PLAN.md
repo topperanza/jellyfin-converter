@@ -102,3 +102,14 @@ bash scripts/check-changed.sh HEAD~1
 bash scripts/check-fast.sh
 bash scripts/check-full.sh
 ```
+
+### Milestone 7 (ID: MILESTONE-7) — Final prompt-pack baseline migration verification
+- **Objective:** Apply one-time final Codex prompt-pack baseline verification with minimal diff and no workflow redesign.
+- **Scope / files:** `docs/codex/WORKFLOW_VERSION.md`, `docs/codex/STATUS.md`, optional directly affected control-plane docs only if drift is found.
+- **Commands:**
+  - `bash scripts/codex/check-workflow-conformance.sh`
+  - `bash scripts/check-fast.sh`
+  - `bash scripts/check-changed.sh HEAD~1`
+- **Completion criteria:** canonical prompt path and final filename set are verified, stale active-doc prompt refs are absent, and required conformance/fast validation passes.
+- **Risks / rollback:** low-risk control-plane doc drift; rollback by reverting milestone-7 doc/status updates.
+- **Checkpoint update:** record migration verification evidence and any follow-ups in `docs/codex/STATUS.md` and `.codex/checkpoints/MILESTONE-7.md`.

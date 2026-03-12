@@ -1,13 +1,17 @@
 # Codex Workflow Version
 
-- Current workflow version: `v1.2.2`
+- Current workflow version: `v1.2.3`
 - Prompt pack path (canonical `PROMPTS_DIR`): `docs/codex/usage-prompts`
-- Last updated: 2026-03-12 (milestone-6 follow-up)
+- Last updated: 2026-03-12 (final prompt-pack baseline migration verification)
 
 ## Scope
 This file versions the repository Codex control-plane workflow surfaces and keeps prompt-pack routing explicit.
 
 ## Version history
+- `v1.2.3` (2026-03-12)
+  - Verified canonical prompt-pack baseline remains active at `docs/codex/usage-prompts` with final filename set.
+  - Confirmed temporary hardening prompts are not in the active usage pack and no stale active-doc references remain.
+  - Re-ran conformance + fast/changed validation to checkpoint one-time migration readiness without widening workflow scope.
 - `v1.2.2` (2026-03-12)
   - Added README-level canonical prompt-pack path reference for faster control-plane discoverability.
   - Aligned downstream `docs/project-files/validation-summary.md` ordering with milestone-specific-first validation policy.
