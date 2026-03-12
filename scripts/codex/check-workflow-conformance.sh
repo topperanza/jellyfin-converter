@@ -17,6 +17,17 @@ need_file() {
   [[ -f "$path" ]] || fail "missing required file: $path"
 }
 
+need_pattern() {
+  local pattern="$1"
+  local path="$2"
+  if command -v rg >/dev/null 2>&1; then
+    rg -q "$pattern" "$path"
+  else
+    grep -Eq "$pattern" "$path"
+  fi
+}
+
+
 echo "==> Codex workflow conformance"
 echo "CODEX_DOCS_DIR=$CODEX_DOCS_DIR"
 echo "PROMPTS_DIR=$PROMPTS_DIR"
@@ -70,15 +81,15 @@ if [[ -d "$CODEX_DOCS_DIR/prompts" ]]; then
   fail "non-canonical prompts directory detected: $CODEX_DOCS_DIR/prompts"
 fi
 
-rg -q '^# Codex Workflow Version' "$CODEX_DOCS_DIR/WORKFLOW_VERSION.md" || fail "workflow version header missing"
-rg -q '^\- Current workflow version:' "$CODEX_DOCS_DIR/WORKFLOW_VERSION.md" || fail "workflow version value missing"
+need_pattern '^# Codex Workflow Version' "$CODEX_DOCS_DIR/WORKFLOW_VERSION.md" || fail "workflow version header missing"
+need_pattern '^\- Current workflow version:' "$CODEX_DOCS_DIR/WORKFLOW_VERSION.md" || fail "workflow version value missing"
 
-rg -q 'Milestone completion is determined by the milestone contract plus the blocking rules' "$CODEX_DOCS_DIR/RUNBOOK.md" || fail "runbook missing contract-scoped gate rule"
-rg -q 'downstream sync surface' "$CODEX_DOCS_DIR/DOC_SYNC_MATRIX.md" || fail "DOC_SYNC_MATRIX missing downstream export rule"
+need_pattern 'Milestone completion is determined by the milestone contract plus the blocking rules' "$CODEX_DOCS_DIR/RUNBOOK.md" || fail "runbook missing contract-scoped gate rule"
+need_pattern 'downstream sync surface' "$CODEX_DOCS_DIR/DOC_SYNC_MATRIX.md" || fail "DOC_SYNC_MATRIX missing downstream export rule"
 
-rg -q 'release-prep review' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing release-prep step"
-rg -q 'tag \+ release' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing tag+release step"
-rg -q 'Full repo audit is recovery-only' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing recovery-only audit guardrail"
-rg -q 'This is a blocker-closure check, not a fresh milestone gate and not a full repo audit' "$PROMPTS_DIR/05-blocker-closure-check.md" || fail "blocker-closure scope guardrail missing"
+need_pattern 'release-prep review' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing release-prep step"
+need_pattern 'tag \+ release' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing tag+release step"
+need_pattern 'Full repo audit is recovery-only' "$PROMPTS_DIR/0000-README-usage-order.md" || fail "prompt index missing recovery-only audit guardrail"
+need_pattern 'This is a blocker-closure check, not a fresh milestone gate and not a full repo audit' "$PROMPTS_DIR/05-blocker-closure-check.md" || fail "blocker-closure scope guardrail missing"
 
 echo "Conformance checks passed"
