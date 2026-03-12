@@ -30,16 +30,18 @@ _Last updated: 2026-03-11 08:56 UTC_
 ## Files touched
 - `docs/codex/RUNBOOK.md`
 - `docs/codex/CLOUD_ENV_CHECKLIST.md`
-- `docs/codex/usage-prompts/00-README-usage-order.md`
+- `docs/codex/usage-prompts/0000-README-usage-order.md`
+- `docs/codex/usage-prompts/000-full-repo-audit-recovery-only.md`
+- `docs/codex/usage-prompts/00-repo-starter.md`
 - `docs/codex/usage-prompts/01-next-milestone-planner.md`
 - `docs/codex/usage-prompts/02-milestone-implementation.md`
 - `docs/codex/usage-prompts/03-milestone-gate.md`
 - `docs/codex/usage-prompts/04-blocker-patch.md`
 - `docs/codex/usage-prompts/05-blocker-closure-check.md`
 - `docs/codex/usage-prompts/06-final-local-verification.md`
-- `docs/codex/usage-prompts/07-commit-push-after-pass.md`
-- `docs/codex/usage-prompts/08-full-repo-audit-recovery.md`
-- `docs/codex/usage-prompts/09-release-prep.md`
+- `docs/codex/usage-prompts/07-commit-and-push-after-pass.md`
+- `docs/codex/usage-prompts/08-release-prep.md`
+- `docs/codex/usage-prompts/09-tag-and-release.md`
 - `docs/codex/STATUS.md`
 - `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
 
@@ -49,7 +51,7 @@ _Last updated: 2026-03-11 08:56 UTC_
   - `bash scripts/check-changed.sh HEAD~1`
   - `bash scripts/check-full.sh`
 - Current closure re-validation:
-  - `expected='00-README-usage-order.md ... 09-release-prep.md'; actual="$(find docs/codex/usage-prompts -maxdepth 1 -type f -exec basename {} \; | sort)"; [ "$expected" = "$actual" ]; for f in docs/codex/usage-prompts/*.md; do rg -q '^# ' "$f"; rg -q '^When to use:' "$f"; rg -q '^Run in:' "$f"; rg -q '^```text' "$f"; done`
+  - `expected='0000-README-usage-order.md 000-full-repo-audit-recovery-only.md 00-repo-starter.md 01-next-milestone-planner.md 02-milestone-implementation.md 03-milestone-gate.md 04-blocker-patch.md 05-blocker-closure-check.md 06-final-local-verification.md 07-commit-and-push-after-pass.md 08-release-prep.md 09-tag-and-release.md'; actual="$(find docs/codex/usage-prompts -maxdepth 1 -type f -exec basename {} \; | sort | tr '\n' ' ' | sed 's/ $//')"; [ "$expected" = "$actual" ]; for f in docs/codex/usage-prompts/*.md; do rg -q '^# ' "$f" || rg -q 'task' "$f"; done`
   - `bash scripts/check-fast.sh`
   - `bash scripts/check-changed.sh HEAD~1`
 

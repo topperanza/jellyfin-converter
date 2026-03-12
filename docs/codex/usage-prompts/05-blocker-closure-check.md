@@ -1,26 +1,31 @@
-# 05 Blocker Closure Check
+Review-only task.
 
-When to use: Use immediately after Prompt 04 to verify blocker closure.
-Run in: Codex Cloud
+Goal:  
+Determine whether the currently listed blockers have been fixed and whether the repository can now advance.
 
-```text
-Task: verify only known blockers are closed, plus regression safety on touched scope.
+This is a blocker-closure check, not a fresh milestone gate and not a full repo audit.
 
-Checks:
-- confirm each known blocker is resolved
-- confirm no new blocker in touched paths
-- run narrow regression-safety checks for touched scope
-- run bash scripts/check-fast.sh
-- confirm STATUS/checkpoint evidence updated
+Hard rules:  
+\- Do NOT implement changes.  
+\- Do NOT revisit unrelated milestone history.  
+\- Check only the named blockers plus protected regression areas.  
+\- Use docs/codex/DOC_SYNC_MATRIX.md to distinguish blocking vs non-blocking documentation items.  
+\- docs/project-files should only be checked if the blocker list or DOC_SYNC_MATRIX.md makes it relevant.
 
-Rules:
-- Keep this check narrow.
-- No full milestone rediscovery.
-- No full repo audit.
+Inspect:  
+\- prior blocker list  
+\- docs/codex/DOC_SYNC_MATRIX.md  
+\- exact files changed to fix blockers  
+\- relevant tests/check results  
+\- required docs/exports tied to those blockers
 
-Output required:
-- closure result: CLEARED or NOT CLEARED
-- evidence commands and results
-- remaining blockers (if any)
-- next required prompt (03 retry or 06)
-```
+Output:  
+A) Blocker closure matrix  
+B) Regression check  
+C) Decision  
+D) Remaining blockers only  
+E) If passed: confirm repo is ready for next step
+
+Decision values:  
+\- SAFE TO MOVE ON  
+\- STILL BLOCKED

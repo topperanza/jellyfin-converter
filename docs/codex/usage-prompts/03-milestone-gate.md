@@ -1,35 +1,41 @@
-# 03 Milestone Gate
+Review-only task.
 
-When to use: Use after milestone implementation and validation evidence are recorded.
-Run in: Codex Cloud
+Goal:  
+Evaluate the just-completed milestone against its stated completion contract and determine whether the repository can advance.
 
-```text
-Task: run contract-scoped milestone gate (not a full repo audit).
+This is a milestone gate, not a full-repo truth audit.
 
-Gate checks:
-1) PLAN completion criteria satisfied?
-2) DOC_SYNC_MATRIX blocking updates complete?
-3) canonical validation order evidence present?
-4) STATUS and checkpoint updated with evidence?
+Hard rules:  
+\- Do NOT implement changes.  
+\- Do NOT edit docs in this task.  
+\- Do NOT reopen unrelated completed milestones unless there is direct regression evidence.  
+\- Focus on the current milestone contract first.  
+\- Use docs/codex/DOC_SYNC_MATRIX.md to determine which documentation updates are BLOCKING vs NON-BLOCKING.  
+\- Non-blocking documentation hygiene items must be recorded as follow-ups and must not prevent SAFE TO MOVE ON.  
+\- docs/project-files is a downstream export layer, not a primary source of truth for milestone decisions.
 
-Classification:
-- unresolved item must be labeled exactly one of:
-  - BLOCKING
-  - NON-BLOCKING FOLLOW-UP
+Inspect first:  
+\- docs/codex/PLAN.md  
+\- docs/codex/STATUS.md  
+\- docs/codex/RUNBOOK.md  
+\- docs/codex/DOC_SYNC_MATRIX.md  
+\- exact files changed for the milestone  
+\- relevant tests/check results
 
-Decision must be exactly one of:
-- SAFE TO MOVE ON
-- FIX BLOCKERS FIRST
-- DO NOT ADVANCE YET
+Required procedure:  
+1\. Restate milestone contract  
+2\. Check implementation against contract  
+3\. Check blocking docs only  
+4\. Check validation evidence  
+5\. Decide if repo can advance
 
-Rules:
-- Milestone completion = PLAN contract + DOC_SYNC_MATRIX blocking rules.
-- Non-blocking documentation hygiene must not auto-block advancement.
-- docs/project-files remains downstream export only.
+Output:  
+A) Milestone contract  
+B) Gate findings  
+C) Blocking issues only  
+D) Non-blocking follow-ups  
+E) Decision
 
-Output required:
-- decision
-- blocking items
-- non-blocking follow-ups
-- next required prompt (04/05 or 06)
-```
+Decision values:  
+\- SAFE TO MOVE ON  
+\- BLOCKED

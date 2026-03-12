@@ -1,31 +1,38 @@
-# 02 Milestone Implementation
+Implementation task for the current repository.
 
-When to use: Use to implement exactly one active milestone-sized change from PLAN.
-Run in: Codex Cloud
+Goal:  
+Implement exactly one milestone-sized change according to the repository control plane and current milestone contract.
 
-```text
-Task: implement exactly one active milestone contract.
+Hard rules:  
+\- Do NOT redesign the repository.  
+\- Do NOT broaden scope beyond the selected milestone.  
+\- Do NOT reopen unrelated completed milestones without direct regression evidence.  
+\- Keep diffs narrow and review-friendly.  
+\- Use docs/codex/DOC_SYNC_MATRIX.md to update only the documentation that is required for this milestone.  
+\- Treat docs/project-files as downstream export only unless explicitly required.
 
-Execution order:
-1) inspect AGENTS/PLAN/STATUS/RUNBOOK/REPO_OVERVIEW/DOC_SYNC_MATRIX
-2) implement milestone-scoped changes only
-3) run narrow milestone-specific validation first
-4) run bash scripts/check-fast.sh
-5) run bash scripts/check-changed.sh only if present and relevant
-6) run bash scripts/check-full.sh only if justified by scope/risk
-7) update required docs per DOC_SYNC_MATRIX
-8) record command evidence, results, follow-ups in docs/codex/STATUS.md
-9) update checkpoint .codex/checkpoints/MILESTONE-<id>.md
+Inspect first:  
+\- docs/codex/PLAN.md  
+\- docs/codex/STATUS.md  
+\- docs/codex/RUNBOOK.md  
+\- docs/codex/REPO_OVERVIEW.md  
+\- docs/codex/DOC_SYNC_MATRIX.md  
+\- relevant source/test/config/build files
 
-Rules:
-- Source-of-truth order applies; docs/project-files is downstream only.
-- No unrelated refactors or formatting churn.
-- Do not broaden into full-repo audit during milestone implementation.
+Required procedure:  
+1\. Restate the milestone contract  
+2\. Implement only that scope  
+3\. Run milestone-specific validation first  
+4\. Run bash scripts/check-fast.sh  
+5\. Run bash scripts/check-changed.sh if present/relevant  
+6\. Run bash scripts/check-full.sh only if justified  
+7\. Update required docs according to DOC_SYNC_MATRIX  
+8\. Return concise implementation summary
 
-Output required:
-- files changed
-- commands run
-- results (pass/fail/skip)
-- blockers and non-blocking follow-ups
-- ready for milestone gate
-```
+Output:  
+A) Milestone contract  
+B) Files changed  
+C) Validation performed  
+D) Docs updated  
+E) Follow-ups  
+F) Completion status

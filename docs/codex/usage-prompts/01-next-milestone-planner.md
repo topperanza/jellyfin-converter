@@ -1,33 +1,43 @@
-# 01 Next Milestone Planner
+Planning task for the current repository.
 
-When to use: Use after the current milestone has passed and you need the next numbered milestone.
-When to use: Planning only; do not implement code/doc changes in this run.
-Run in: Codex Cloud
+Goal:  
+Identify the next milestone-sized unit of work that moves the repository forward while preserving the current control plane, validation order, and anti-loop workflow.
 
-```text
-Task: plan the next numbered milestone only.
+Hard rules:  
+\- Do NOT implement changes.  
+\- Do NOT broaden into a full repo redesign.  
+\- Do NOT reopen completed milestone history without direct regression evidence.  
+\- Use docs/codex/DOC_SYNC_MATRIX.md to determine which documentation surfaces are likely to matter.  
+\- Treat docs/project-files as downstream export only.
 
-Read first:
-- AGENTS.md
-- docs/codex/PLAN.md
-- docs/codex/STATUS.md
-- docs/codex/RUNBOOK.md
-- docs/codex/REPO_OVERVIEW.md
-- docs/codex/DOC_SYNC_MATRIX.md
-- latest .codex/checkpoints/MILESTONE-<n>.md
+Inspect first:  
+\- docs/codex/PLAN.md  
+\- docs/codex/STATUS.md  
+\- docs/codex/RUNBOOK.md  
+\- docs/codex/REPO_OVERVIEW.md  
+\- docs/codex/DOC_SYNC_MATRIX.md  
+\- relevant source/test/config files  
+\- recent commits / current branch state if helpful
 
-Rules:
-- Keep source-of-truth order: code/tests/config first, docs/codex next, docs/project-files last (downstream only).
-- Use one coherent milestone with numbered ID in plan order (MILESTONE-<n>).
-- Keep scope small, reviewable, and rollback-safe.
-- Milestone completion rule: PLAN contract + DOC_SYNC_MATRIX blocking rules.
-- Non-blocking doc hygiene must be recorded as follow-up, not as blocker.
+Required procedure:  
+1\. Determine actual current milestone position  
+2\. Identify the highest-leverage next milestone  
+3\. Keep milestone size narrow and reviewable  
+4\. Define:  
+   - objective  
+   - constraints  
+   - likely files/modules  
+   - validation plan  
+   - required docs per DOC_SYNC_MATRIX  
+   - success criteria  
+   - rollback notes if relevant
 
-Output required:
-1) milestone ID, title, objective
-2) scope and exact files likely to change
-3) implementation plan (stepwise)
-4) validation plan in canonical order
-5) risks and rollback notes
-6) paste-ready implementation prompt for Prompt 02
-```
+Output:  
+A) Current state summary  
+B) Recommended next milestone  
+C) Why this milestone now  
+D) Exact implementation scope  
+E) Validation plan  
+F) Required docs/exports  
+G) Success criteria  
+H) Risks / assumptions

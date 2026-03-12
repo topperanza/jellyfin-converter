@@ -1,31 +1,48 @@
-# 06 Final Local Verification
+Final local verification task for the current repository.
 
-When to use: Use for final real-machine verification when work is local/bootstrap/toolchain-sensitive.
-When to use: Also use as final confidence check before commit/push.
-Run in: Codex Local app
+Goal:  
+Perform a final local verification pass to confirm that the completed work is operationally sound on the real local environment and remains aligned with the repo control plane.
 
-```text
-Task: run final local verification for milestone handoff readiness.
+This is a verification task, not a new implementation task.
 
-Execution order:
-1) bash scripts/codex/setup.sh (fresh env) or bash scripts/codex/maintenance.sh (warm env)
-2) run milestone-targeted validation
-3) run bash scripts/check-fast.sh
-4) run bash scripts/check-changed.sh HEAD~1 if present/relevant
-5) run bash scripts/check-full.sh if justified
+Hard rules:  
+\- Do NOT do broad new implementation work.  
+\- Do NOT reopen milestone history unless there is direct regression evidence.  
+\- Prefer verification and only the smallest corrective patch if a last-mile issue is found.  
+\- Use docs/codex/DOC_SYNC_MATRIX.md for required tracking surfaces.  
+\- Treat docs/project-files as downstream export only.
 
-Checks:
-- touched files remain milestone-scoped
-- control-plane docs stay aligned (AGENTS/RUNBOOK/REPO_OVERVIEW/DOC_SYNC_MATRIX)
-- docs/project-files remains downstream export only
+Inspect first:  
+\- docs/codex/PLAN.md  
+\- docs/codex/STATUS.md  
+\- docs/codex/RUNBOOK.md  
+\- docs/codex/REPO_OVERVIEW.md  
+\- docs/codex/DOC_SYNC_MATRIX.md  
+\- scripts/codex/setup.sh  
+\- scripts/codex/maintenance.sh  
+\- scripts/check-fast.sh  
+\- scripts/check-changed.sh  
+\- scripts/check-full.sh  
+\- relevant build/runtime/config files  
+\- relevant test directories
 
-Decision must be exactly one of:
-- READY FOR COMMIT/PUSH
-- ONE LAST PATCH NEEDED
+Required procedure:  
+1\. Verify control-plane coherence  
+2\. Verify repo-specific environment/bootstrap scripts if relevant  
+3\. Verify repo-specific validation scripts if relevant  
+4\. Run final local validation:  
+   - narrow milestone-specific checks first  
+   - bash scripts/check-fast.sh  
+   - bash scripts/check-changed.sh if present and relevant  
+   - bash scripts/check-full.sh if justified  
+5\. Decide:  
+   - READY FOR COMMIT/PUSH  
+   - ONE LAST PATCH NEEDED
 
-Output required:
-- commands run
-- pass/fail/skip evidence
-- decision
-- if patch needed: narrow patch scope for next run
-```
+Output:  
+A) Verification verdict  
+B) Verification matrix  
+C) Validation performed  
+D) Remaining blocker if any  
+E) Final recommendation  
+F) Short summary
