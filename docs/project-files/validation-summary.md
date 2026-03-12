@@ -1,9 +1,10 @@
 # Validation Summary
 
 ## Preferred validation order
-1. `bash scripts/check-fast.sh`
-2. `bash scripts/check-changed.sh <base-ref>` (when useful for scoped deltas)
-3. `bash scripts/check-full.sh`
+1. Narrow milestone-specific validation first (suite/command depends on changed scope).
+2. `bash scripts/check-fast.sh`
+3. `bash scripts/check-changed.sh <base-ref>` (when useful for scoped deltas)
+4. `bash scripts/check-full.sh`
 
 ## What fast validation covers
 `scripts/check-fast.sh` runs:
