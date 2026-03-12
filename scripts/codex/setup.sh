@@ -54,7 +54,7 @@ cat > .codex/env.sh <<ENV
 export JELLYFIN_CONVERTER_ROOT="$REPO_ROOT"
 ENV
 
-chmod +x run.sh scripts/jellyfin_converter.sh tests/run.sh scripts/codex/setup.sh scripts/codex/maintenance.sh scripts/check-fast.sh scripts/check-full.sh scripts/check-changed.sh 2>/dev/null || true
+chmod +x run.sh scripts/jellyfin_converter.sh tests/run.sh scripts/codex/setup.sh scripts/codex/maintenance.sh scripts/codex/check-workflow-conformance.sh scripts/check-fast.sh scripts/check-full.sh scripts/check-changed.sh 2>/dev/null || true
 
 have_media_tools=0
 if install_ffmpeg_if_missing; then
@@ -75,6 +75,9 @@ else
 fi
 
 echo "==> Running smoke validation"
+echo "bash scripts/codex/check-workflow-conformance.sh"
+bash scripts/codex/check-workflow-conformance.sh
+
 echo "bash scripts/check-fast.sh"
 if [[ "$have_media_tools" -eq 1 ]]; then
   bash scripts/check-fast.sh

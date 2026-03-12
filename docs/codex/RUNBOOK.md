@@ -21,8 +21,9 @@ bash scripts/codex/maintenance.sh
 2. `docs/codex/PLAN.md`
 3. `docs/codex/STATUS.md`
 4. `docs/codex/REPO_OVERVIEW.md`
-5. `docs/codex/DOC_SYNC_MATRIX.md`
-6. Most recent `.codex/checkpoints/MILESTONE-<n>.md`
+5. `docs/codex/WORKFLOW_VERSION.md`
+6. `docs/codex/DOC_SYNC_MATRIX.md`
+7. Most recent `.codex/checkpoints/MILESTONE-<n>.md`
 
 ## 3) Milestone execution loop
 1. Identify milestone contract in `docs/codex/PLAN.md`.
@@ -68,6 +69,11 @@ Use **Codex Local app** for:
 - Manually test prompts before enabling recurring schedules.
 
 ## 4) Validation command set
+Workflow conformance:
+```bash
+bash scripts/codex/check-workflow-conformance.sh
+```
+
 Fast validation:
 ```bash
 bash scripts/check-fast.sh
