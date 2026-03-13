@@ -9,8 +9,10 @@
 - Processed tracking + output-path guardrails are required for repeat-run safety.
 
 ## Validation and release invariants
-- High-risk runtime paths (stream-selection, subtitle/audio mapping, ffmpeg mapping) require strong representative validation.
+- High-risk runtime paths (stream-selection, subtitle/audio mapping, ffmpeg mapping) require representative matrix evidence, not ad-hoc confidence claims.
+- Runtime-confidence matrix baseline is M1-C01..M1-C07 and must stay explicit in milestone status/checkpoint docs.
 - Validation order remains milestone-specific checks first, then fast, then changed/full checks as justified.
+- Runtime-confidence milestones must report command outcomes and matrix-case proof fragments (`-map`, `-disposition`, stable ordering).
 - v1 release bar includes operator-ready packaging/distribution plus aligned README/scope/changelog narrative.
 
 ## Control-plane separation invariant

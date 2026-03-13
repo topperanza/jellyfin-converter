@@ -6,6 +6,30 @@
 3. `bash scripts/check-changed.sh <base-ref>` (when useful for scoped deltas)
 4. `bash scripts/check-full.sh`
 
+## Runtime mapping-confidence contract (MILESTONE-1)
+Representative matrix IDs:
+- M1-C01 deterministic tie-break ordering
+- M1-C02 mixed-language forced + normal behavior
+- M1-C03 external/internal precedence (text vs bitmap)
+- M1-C04 commentary + SDH handling
+- M1-C05 `und` language fallback determinism
+- M1-C06 audio/subtitle mapping coherence
+- M1-C07 subtitle disposition correctness
+
+Required targeted entrypoints before broad checks:
+1. `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+2. `./tests/run.sh tests/test_subtitle_mapping.sh tests/test_phase4_mapping.sh tests/test_internal_subtitles.sh`
+3. `bash scripts/check-fast.sh`
+4. `bash scripts/check-changed.sh HEAD~1`
+5. `bash scripts/check-full.sh` only when runtime breadth/risk justifies.
+
+## Evidence format
+For runtime milestones, status/checkpoint evidence must include:
+- exact command + pass/fail/skip (with skip reason)
+- matrix-case mapping to tests and proof fragments (`-map`, `-disposition`, ordering)
+- environment notes (`ffmpeg`/`ffprobe` dependency impact)
+- residual risk list for uncovered/flaky cases
+
 ## What fast validation covers
 `scripts/check-fast.sh` runs:
 - `bash -n scripts/jellyfin_converter.sh`
