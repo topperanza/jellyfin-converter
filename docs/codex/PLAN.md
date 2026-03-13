@@ -1,6 +1,6 @@
 # Codex Long-Run Plan (Phase: product realignment complete, runtime confidence next)
 
-_Last refreshed: 2026-03-13_
+_Last refreshed: 2026-03-14_
 
 Milestone closure rule: milestone completion is determined by the milestone contract plus blocking rules in `docs/codex/DOC_SYNC_MATRIX.md`; record non-blocking documentation hygiene as follow-ups without blocking advancement.
 
@@ -67,6 +67,14 @@ Milestone closure rule: milestone completion is determined by the milestone cont
 - **Scope / files:** runtime stream-selection/mapping paths (`scripts/lib/media_filters.sh`, related CLI wiring if required) + targeted tests/fixtures only for C01..C04.
 - **In scope:** deterministic tie-break ordering, mixed-language forced/normal retention, external/internal precedence correctness, commentary/SDH deterministic behavior.
 - **Out of scope:** packaging, GUI changes, non-representative matrix expansion, release narrative changes.
+- **Execution slice (narrow contract for next implementation pass):**
+  1. **Deterministic ordering and tie-break audit (M1-C01):** update only ranking/tie logic and ordering assertions around `build_subtitle_plan` / mapping assembly (no policy expansion).
+  2. **Mixed-language forced+normal retention (M1-C02):** ensure one forced + one normal slot behavior remains deterministic for wanted languages while preserving forced tracks for other languages.
+  3. **External vs internal precedence clarity (M1-C03):** verify text-vs-bitmap and internal-vs-external precedence via config-aware scoring and selection assertions.
+  4. **Commentary/SDH deterministic handling (M1-C04):** lock behavior using focused fixtures/assertions without broadening language or GUI scope.
+- **Likely files/modules for M1A:**
+  - Runtime: `scripts/lib/media_filters.sh`, `scripts/lib/process.sh` (only if required for map/disposition emission coherence).
+  - Targeted tests: `tests/suite_selection.sh`, `tests/suite_ffmpeg.sh`, `tests/test_subtitle_mapping.sh`, `tests/test_phase4_mapping.sh`, `tests/test_internal_subtitles.sh`, and tightly scoped fixtures under `tests/fixtures/` when strictly needed.
 - **Validation commands:**
   - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
   - `./tests/run.sh tests/test_subtitle_mapping.sh tests/test_phase4_mapping.sh`
