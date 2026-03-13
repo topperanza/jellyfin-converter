@@ -2,22 +2,56 @@
 
 ![CI](https://github.com/mt/jellyfin-converter/actions/workflows/ci.yml/badge.svg)
 
-Stable local CLI for converting common video files into Jellyfin-friendly MKV containers with conservative defaults and safety controls.
+`jellyfin-converter` is a **safety-first local conversion tool for a single operator**, centered on **deterministic stream-selection** and **explicit destructive-action gates**, with a **CLI as the canonical execution path** and a **thin local GUI for operator convenience**.
+
+## Product focus (v1)
+
+### What this tool does
+- Converts local media into Jellyfin-friendly MKV outputs.
+- Applies deterministic probe/selection/mapping rules (audio + subtitles).
+- Verifies outputs before any destructive cleanup path is allowed.
+- Tracks processed files for repeat-run safety.
+
+### Who v1 is for
+- Single technical operator (local maintainer workflow).
+
+### Explicitly not v1
+- Consumer-grade GUI product.
+- Multi-user auth/roles.
+- Cloud/hosted conversion.
+- Web frontend.
+- Media-library management beyond conversion.
+
+## Canonical v1 workflow
+1. Scan input.
+2. Probe streams.
+3. Apply deterministic selection/mapping.
+4. Write MKV output.
+5. Verify result.
+6. Optionally run destructive cleanup after explicit confirmation.
+
+## Mandatory safety invariants
+- `DRY_RUN=1` by default.
+- Delete is off by default.
+- Explicit confirmation is required for destructive actions.
+- Output verification is required before destructive cleanup.
+- Guardrails prevent recursive output churn.
+- Processed tracking is part of repeat-run safety.
 
 ## Documentation
-
+- [Scope & Version Boundaries](docs/scope.md)
+- [Architecture & Layer Boundaries](docs/architecture.md)
 - [CLI Contract v1](docs/cli-contract-v1.md)
 - [Compatibility Matrix](docs/compatibility-matrix.md)
 - [User Guide](docs/user-guide.md)
 - [Subtitle Policy & Configuration](docs/subtitles.md)
+- [Release/Milestone Direction](docs/NEXT_STEPS.md)
 - [Security Policy](SECURITY.md)
 
-## Codex control-plane references
-- Milestone plan/status/runbook: `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, `docs/codex/RUNBOOK.md`
-- Documentation sync gate rules: `docs/codex/DOC_SYNC_MATRIX.md`
-- Canonical Codex prompt pack (`PROMPTS_DIR`): `docs/codex/usage-prompts`
-- Automation prompt templates (for Codex app copy/paste): `docs/codex/automations/`
-- Repo-native Codex skills: `.agents/skills/`
+## Control-plane references (contributors)
+- Plan/status/runbook: `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, `docs/codex/RUNBOOK.md`
+- Documentation sync rules: `docs/codex/DOC_SYNC_MATRIX.md`
+- Codex prompt pack: `docs/codex/usage-prompts/`
 
 ## Supported platforms
 - macOS and Linux (both release-blocking in CI)
@@ -43,7 +77,6 @@ jellyfin-converter --self-check
 ```bash
 ./run.sh --dry-run /path/to/videos
 ```
-Dry-run is on by default. Output root defaults to `converted/` under scan dir.
 
 Real conversion (keep originals):
 ```bash
@@ -72,4 +105,4 @@ DRY_RUN=0 DELETE=1 DELETE_SIDECARS=1 ./run.sh /path/to/videos
 Open an issue on GitHub with:
 - OS version
 - `jellyfin-converter --version` output
-- Command used and console logs (with `DRY_RUN=1` preferred)
+- command used and console logs (prefer `DRY_RUN=1`)

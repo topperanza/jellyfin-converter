@@ -1,15 +1,37 @@
-## Prioritized Roadmap & Timeline
-1) Fix ffprobe audio/subtitle parsing to avoid language loss — **1 day** — Risk: silent misclassification; Mitigation: add fixtures and CI coverage.
-2) Prune output and hidden paths from scans to stop recursive reprocessing — **0.5 day** — Risk: accidental deletes; Mitigation: add find-prune tests.
-3) Add ffmpeg/ffprobe install steps in CI (Ubuntu/macOS binary fetch) — **0.5 day** — Risk: CI red without binaries; Mitigation: cache/verify binaries.
-4) Sidecar deletion safety toggle (`DELETE_SIDECARS`) and uniqueness check — **1 day** — Risk: shared sidecars removed; Mitigation: require explicit opt-in.
-5) Preserve and surface subtitle default/commentary metadata — **0.5 day** — Risk: playback defaults lost; Mitigation: metadata tests for default/comm tracks.
-6) Deterministic subtitle source tie-break (prefer external only when configured) — **0.5 day** — Risk: locale-dependent ordering; Mitigation: explicit score field + tests.
-7) Bash 3.2 compatibility gate in CI — **0.5 day** — Risk: regressions in Bash<4 paths; Mitigation: dedicated job using system `/bin/bash`.
-8) Broaden external subtitle support when bitmap retention is enabled (`.sup`, `.sub/.idx`) — **1 day** — Risk: unwanted imports; Mitigation: guard behind `KEEP_BITMAP_SUBS`.
-9) Batch ffprobe queries to cut subprocess overhead on multi-track files — **1 day** — Risk: parsing drift; Mitigation: lock JSON schema and add perf sanity test.
-10) Governance: issue/PR templates and branch protection guidance — **0.5 day** — Risk: inconsistent releases; Mitigation: document release/tag policy.
+# Product Milestones (Post-Realignment)
 
-### Suggested Release Cadence
-- Patch cadence: weekly for v1.0.x until cooldown ends and CI stabilizes.
-- Minor cadence: monthly for v1.1 once hardening items 1–5 land and remain green for two weeks.
+This roadmap reflects the narrowed product direction: finish and clarify the current local safety-first converter, not broad platform expansion.
+
+## M0 — Scope + release narrative alignment (current)
+- Align README/scope/architecture/milestone/release wording to one product story.
+- Make v1/v1.1/v2 boundaries explicit.
+- Keep user-facing product docs separate from contributor control-plane docs.
+
+## M1 — High-risk runtime validation contract (next)
+- Define and ratify representative, risk-focused validation coverage for:
+  - stream-selection determinism
+  - subtitle/audio mapping behavior
+  - ffmpeg command/mapping correctness
+  - verification-before-delete safety boundaries
+- Focus on confidence for risky runtime iteration; no broad feature expansion.
+
+## M2 — Thin local GUI over canonical runtime
+- Keep CLI as canonical source-of-truth execution path.
+- Ensure GUI remains operator-oriented and thin.
+- Avoid consumer GUI framing or scope creep.
+
+## M3 — Packaging + cross-platform operator readiness
+- Close remaining installer/distribution friction for operator use.
+- Keep release artifacts and operator docs aligned with CLI contract and safety defaults.
+
+## M4 — v1 release gate
+- Confirm v1 production-usable bar:
+  - safe defaults and destructive-action gates
+  - deterministic and repeat-run-safe operation
+  - representative edge-case confidence for mixed-language mapping behavior
+  - operator docs and cross-platform packaging aligned for practical use
+
+## Version framing
+- **v1:** must-have local CLI + thin local GUI + deterministic conversion + safety gates + validation confidence + packaging/readiness.
+- **v1.1:** polish (GUI ergonomics, packaging ergonomics, non-blocking docs, broader-but-non-blocking sample coverage).
+- **v2+:** web frontend, multi-user/auth, cloud/hosted execution, broader integrations, and non-MKV-first expansion as core commitments.

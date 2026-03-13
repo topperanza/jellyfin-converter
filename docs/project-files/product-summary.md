@@ -1,26 +1,30 @@
 # Product Summary
 
-## What this repository does
-Provides a stable local CLI and Bash pipeline to convert common video sources into Jellyfin-friendly MKV outputs with conservative defaults and safety controls.
+## Product sentence
+`jellyfin-converter` is a safety-first local conversion tool for a single operator, centered on deterministic stream-selection and explicit destructive-action gates, with a CLI as the canonical execution path and a thin local GUI for operator convenience.
 
-## Main user/operator outcome
-- Produce playback-compatible outputs for Jellyfin.
-- Keep originals by default, with deletion only when explicitly enabled and validated.
-- Run deterministic conversions that can be resumed safely.
+## Main operator outcome
+- Safely convert local media into Jellyfin-friendly MKV outputs.
+- Keep destructive cleanup explicitly gated and optional.
+- Get predictable repeat-run behavior via deterministic policy + processed tracking.
 
-## Current scope
-- Local conversion workflow via `run.sh` / `scripts/jellyfin_converter.sh`.
-- Stable CLI contract (`docs/cli-contract-v1.md`) for flags, env vars, and exit codes.
-- Release and validation workflow for macOS/Linux.
-- Subtitle/audio selection, stream mapping, and output verification backed by tests.
+## v1 in-scope
+- Local CLI workflow (canonical path).
+- Thin local GUI workflow (operator convenience layer).
+- Scan/probe/selection/mapping pipeline.
+- Subtitle/audio policy and MKV-first output generation.
+- Output verification before optional destructive cleanup.
+- Repeat-run safety and recursive-churn guardrails.
+- Packaging/distribution and operator docs suitable for cross-platform use.
 
-## Explicit non-goals
-- Not a media library manager or Jellyfin server plugin.
-- Not a cloud conversion service.
-- Not a GUI-first product in current repo scope.
+## v1 out-of-scope
+- Web frontend.
+- Multi-user auth/roles.
+- Cloud/hosted execution.
+- Media-library management beyond conversion.
+- Broad integration platform.
 
-## Quality bar / success criteria
-- Deterministic behavior for identical inputs/configuration.
-- Explicit codec/container/stream decisions over implicit ffmpeg behavior.
-- Validation-first workflow (`scripts/check-fast.sh` before broader checks).
-- Originals remain untouched unless deletion is explicitly enabled.
+## Release framing
+- v1 = must-have safety + deterministic conversion + CLI-canonical operation + thin local GUI + operator-ready packaging/docs.
+- v1.1 = polish (GUI ergonomics, packaging ergonomics, non-blocking doc polish, broader sample coverage).
+- v2+ = broader platform directions (web, multi-user, cloud, integrations, non-MKV-first as core promise).

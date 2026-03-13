@@ -1,25 +1,19 @@
 # Workflow Invariants
 
-## Safety rules
-- Start from non-destructive mode (`DRY_RUN=1`, `DELETE=0`) unless intentionally overridden.
-- Originals and sidecars are never deleted unless explicit delete flags are set.
-- Destructive behavior remains opt-in and confirmation-gated unless skip-confirm is explicitly set.
+## Product/runtime invariants
+- The tool is local-first, safety-first, and scoped to a single operator in v1.
+- CLI is the canonical execution path; any GUI is a thin local operator layer.
+- Deterministic stream-selection/mapping is required for reproducible outputs.
+- `DRY_RUN=1` default and delete-off default are mandatory safety defaults.
+- Destructive actions require explicit confirmation and verification-before-cleanup.
+- Processed tracking + output-path guardrails are required for repeat-run safety.
 
-## Determinism and reproducibility
-- Conversion and selection outcomes must be deterministic for identical inputs and config.
-- `.processed` tracking remains append-only and lock-protected.
-- Prefer explicit codec/container/stream rules over implicit ffmpeg defaults.
+## Validation and release invariants
+- High-risk runtime paths (stream-selection, subtitle/audio mapping, ffmpeg mapping) require strong representative validation.
+- Validation order remains milestone-specific checks first, then fast, then changed/full checks as justified.
+- v1 release bar includes operator-ready packaging/distribution plus aligned README/scope/changelog narrative.
 
-## Mutation boundaries
-- Source media are treated as immutable inputs.
-- Generated outputs are written under `OUTROOT` (default `converted/` in scan root).
-- `converted/` (or configured `OUTROOT`) is excluded from recursive discovery when in scan scope.
-
-## Failure/reporting expectations
-- Exit codes follow `docs/cli-contract-v1.md` mapping.
-- Logs stay under `logs/` (or configured `LOG_DIR`) and remain operator-auditable.
-- Preflight and validation failures should fail closed (no destructive follow-up).
-
-## Cross-change invariants
-- Tests and docs are the behavior contract; high-risk conversion changes require focused test coverage.
-- Milestone changes that affect behavior/safety/validation must update `docs/project-files/*`.
+## Control-plane separation invariant
+- Product docs explain operator-facing behavior/scope.
+- `docs/codex/*` explains contributor process, planning, and milestone gates.
+- `docs/project-files/*` stays concise and downstream to canonical docs/tests/config.
