@@ -1,11 +1,18 @@
 # Codex Run Status
 
-_Last updated: 2026-03-13_
+_Last updated: 2026-03-14_
 
 ## Current task snapshot
 - Completed **MILESTONE-1** as planning/review-only (no runtime code changes).
 - Defined a representative high-risk runtime validation matrix for deterministic stream-selection, mixed-language subtitle/audio mapping, and ffmpeg mapping confidence.
 - Locked explicit acceptance criteria, non-goals, validation entrypoint ordering, and evidence format for runtime implementation milestones.
+
+
+## Planning refresh (2026-03-14)
+- Reconfirmed actual milestone position: **MILESTONE-1 complete**, **MILESTONE-1A active**.
+- Narrowed the next implementation pass to one reviewable M1A slice covering only M1-C01..M1-C04 (deterministic ordering, mixed-language forced/normal behavior, external/internal precedence, commentary/SDH determinism).
+- Preserved control-plane and validation order: targeted suites first, then `bash scripts/check-fast.sh`, then `bash scripts/check-changed.sh HEAD~1`, and `bash scripts/check-full.sh` only if justified by changed runtime breadth/risk.
+- Kept `docs/project-files/*` as downstream-only (no blocking updates expected unless milestone scope/workflow materially changes).
 
 ## Current milestone
 - ID: MILESTONE-1A
