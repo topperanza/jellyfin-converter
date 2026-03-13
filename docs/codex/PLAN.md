@@ -23,15 +23,57 @@ Milestone closure rule: milestone completion is determined by the milestone cont
 - **Checkpoint update:** record gate evidence and next-step prompt in status/checkpoint.
 
 ### Milestone 1 (ID: MILESTONE-1) — High-risk runtime validation contract
-- **Objective:** Define a concrete runtime confidence contract for high-risk stream-selection/subtitle/ffmpeg mapping paths.
-- **Scope / files:** `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, relevant runbook/checkpoint docs, and targeted runtime-validation planning docs.
-- **Commands:**
-  - narrow planning checks for changed docs/contracts
+- **Objective:** Lock a deterministic, v1-scoped runtime confidence contract for stream-selection determinism, mixed-language subtitle/audio mapping, and ffmpeg mapping correctness before any runtime code changes.
+- **Scope / files:** planning/control-plane docs only (`docs/codex/PLAN.md`, `docs/codex/STATUS.md`, optional runbook updates, and concise `docs/project-files/*` sync artifacts). No runtime implementation.
+- **Representative edge-case matrix (contract set):**
+
+| Case ID | Risk focus | Representative scenario | Required assertions |
+|---|---|---|---|
+| M1-C01 | Deterministic tie-break | Equal-priority candidates (internal vs external, same language/slot) | Same input/config always yields same selected stream order + same `-map` output order.
+| M1-C02 | Mixed-language forced + normal | `eng` + `ita` normal plus `rus` forced (internal/external mix) | Forced track preserved; wanted normal tracks preserved; non-forced non-wanted dropped.
+| M1-C03 | External/internal precedence | External text vs internal bitmap in same language/slot | Text wins; bitmap retained only when policy explicitly allows it.
+| M1-C04 | Commentary/SDH handling | Commentary and SDH combinations alongside primary tracks | Commentary retained per policy; SDH preference behavior is explicit and deterministic.
+| M1-C05 | Undetermined language (`und`) | Internal `und` + titled track mixed with explicit language tracks | Fallback/ranking remains deterministic and policy-aligned; no random/position-based drift.
+| M1-C06 | Audio/subtitle mapping coherence | Multiple audio tracks with language/title metadata and mapped subtitles | ffmpeg `-map` graph keeps expected audio + subtitle pairing without dropping required streams.
+| M1-C07 | Disposition correctness | Forced + normal subtitle outputs together | `-disposition:s:*` flags match plan (forced/default/none) and remain stable across runs.
+
+- **Acceptance criteria:**
+  1. Matrix cases are mapped to exact current test entrypoints (or explicitly marked as new tests required in the next milestone).
+  2. Validation order and command list are explicit and reproducible.
+  3. Evidence format is defined (command, result, and artifacts required per case).
+  4. Non-goals are explicit to prevent v1 scope creep.
+  5. First runtime implementation milestone is fully defined and execution-ready.
+- **Non-goals (for this milestone):**
+  - No runtime behavior changes in `scripts/`.
+  - No broad fixture expansion beyond the representative matrix contract.
+  - No GUI/product-scope expansion beyond v1 CLI-canonical + thin local GUI framing.
+- **Validation entrypoints and ordering (for runtime milestone execution):**
+  1. **Targeted high-risk suites first:**
+     - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+     - `./tests/run.sh tests/test_subtitle_mapping.sh tests/test_phase4_mapping.sh tests/test_internal_subtitles.sh`
+  2. **Then repo-fast gate:** `bash scripts/check-fast.sh`
+  3. **Then delta-focused gate:** `bash scripts/check-changed.sh HEAD~1`
+  4. **Run full only if justified by touched runtime breadth:** `bash scripts/check-full.sh`
+- **Evidence format (required in STATUS/checkpoint for runtime execution):**
+  - Per command: exact command, pass/fail, and short reason if skipped.
+  - Per matrix case: mapped test(s), observed proof string(s) (for example key `-map` / `-disposition` fragments), and outcome.
+  - Environment notes: dependency limitations (`ffmpeg`/`ffprobe`) and their impact.
+  - Residual risk list: uncovered matrix rows or flaky/non-deterministic signals.
+- **Risks / rollback:** matrix grows beyond representative scope or lacks executable mapping; rollback by reducing to the seven contract rows above and deferring extras to follow-up milestones.
+- **Checkpoint update:** record ratified matrix, acceptance/non-goals, validation order/evidence contract, and promotion to first runtime implementation milestone.
+
+### Milestone 1A (ID: MILESTONE-1A) — Runtime implementation: mapping confidence tranche 1
+- **Objective:** Implement the minimum runtime/test changes required to satisfy M1-C01..M1-C04 determinism and mapping assertions.
+- **Scope / files:** runtime stream-selection/mapping paths (`scripts/lib/media_filters.sh`, related CLI wiring if required) + targeted tests/fixtures only for C01..C04.
+- **In scope:** deterministic tie-break ordering, mixed-language forced/normal retention, external/internal precedence correctness, commentary/SDH deterministic behavior.
+- **Out of scope:** packaging, GUI changes, non-representative matrix expansion, release narrative changes.
+- **Validation commands:**
+  - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
+  - `./tests/run.sh tests/test_subtitle_mapping.sh tests/test_phase4_mapping.sh`
   - `bash scripts/check-fast.sh`
   - `bash scripts/check-changed.sh HEAD~1`
-- **Completion criteria:** agreed representative edge-case matrix and validation expectations are explicit, test-targeted, and ready for runtime implementation milestones.
-- **Risks / rollback:** over-broad matrix or unclear ownership; rollback by narrowing contract to risk-focused representative cases.
-- **Checkpoint update:** capture contract, open risks, and first implementation-ready runtime milestone.
+- **Completion criteria:** C01..C04 pass with explicit evidence in status/checkpoint; any remaining C05..C07 gaps are clearly tracked as follow-up runtime tranches.
+- **Risks / rollback:** regressions in existing subtitle policy; rollback via targeted revert of tie-break/mapping delta and re-run targeted suites.
 
 ### Milestone 2 (ID: MILESTONE-2) — Thin local GUI over canonical runtime
 - **Objective:** Keep GUI framing/operator flow aligned with CLI canonical behavior.

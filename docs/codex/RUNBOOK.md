@@ -95,6 +95,22 @@ bash scripts/check-full.sh
 ```
 
 Use the active milestone command block in `docs/codex/PLAN.md` to select exact targeted suites.
+
+For runtime mapping-confidence milestones (MILESTONE-1 contract), execute in this exact order:
+```bash
+./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh
+./tests/run.sh tests/test_subtitle_mapping.sh tests/test_phase4_mapping.sh tests/test_internal_subtitles.sh
+bash scripts/check-fast.sh
+bash scripts/check-changed.sh HEAD~1
+# only if justified by changed runtime breadth/risk
+bash scripts/check-full.sh
+```
+
+Evidence logging requirement (status/checkpoint):
+- command + pass/fail/skip reason
+- matrix-case mapping + proof fragments (`-map`, `-disposition`, ordering)
+- environment limitations and residual risks
+
 Example for subtitle ranking milestones:
 ```bash
 ./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh
