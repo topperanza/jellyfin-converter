@@ -1,8 +1,6 @@
-# Codex Long-Run Plan (Phase: workflow hardening + subtitle pipeline readiness)
+# Codex Long-Run Plan (Phase: product realignment complete, runtime confidence next)
 
-_Last refreshed: 2026-03-12_
-
-## Milestone sequence
+_Last refreshed: 2026-03-13_
 
 Milestone closure rule: milestone completion is determined by the milestone contract plus blocking rules in `docs/codex/DOC_SYNC_MATRIX.md`; record non-blocking documentation hygiene as follow-ups without blocking advancement.
 
@@ -12,104 +10,49 @@ Milestone closure rule: milestone completion is determined by the milestone cont
 3. Run `bash scripts/check-changed.sh` if present and relevant.
 4. Run `bash scripts/check-full.sh` only if justified by changed scope/risk.
 
-### Milestone 0 (ID: MILESTONE-0) — Repo review + plan confirmation
-- **Objective:** Confirm current health, validation entrypoints, and codex scaffolding baseline.
-- **Scope / files:** `AGENTS.md`, `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, `.codex/checkpoints/MILESTONE-0.md`.
-- **Commands:**
-  - `bash scripts/check-fast.sh`
-  - `bash scripts/check-full.sh`
-- **Completion criteria:** baseline checks green; review findings and next-phase milestones recorded.
-- **Risks / rollback:** documentation-only; rollback by reverting docs if plan needs re-scope.
-- **Checkpoint update:** write findings and command results to `.codex/checkpoints/MILESTONE-0.md` and `docs/codex/STATUS.md`.
+## Milestone sequence
 
-### Milestone 1 (ID: MILESTONE-1) — Validation workflow hardening
-- **Objective:** Tighten validation ergonomics for incremental runs without changing conversion behavior.
-- **Scope / files:** `scripts/check-changed.sh`, `scripts/check-fast.sh`, `scripts/check-full.sh`, `docs/codex/RUNBOOK.md` (if command semantics change).
+### Milestone 0 (ID: MILESTONE-0) — Scope + release narrative alignment
+- **Objective:** Align product-facing and control-plane docs to a single approved product definition.
+- **Scope / files:** `README.md`, `docs/scope.md`, `docs/architecture.md`, `docs/NEXT_STEPS.md`, `CHANGELOG.md`, `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, and required `docs/project-files/*` summaries.
 - **Commands:**
   - `bash scripts/check-fast.sh`
   - `bash scripts/check-changed.sh HEAD~1`
-  - `bash scripts/check-full.sh`
-- **Completion criteria:** changed-file validation has clear base-ref behavior and remains Bash 3.2-safe.
-- **Risks / rollback:** accidental over-triggering of checks; rollback by restoring previous check script logic.
-- **Checkpoint update:** record changed-file behavior and expected invocation patterns in status/checkpoint.
+- **Completion criteria:** v1/v1.1/v2 boundaries, safety invariants, layer framing, and next runtime-focused milestone direction are consistent across docs.
+- **Risks / rollback:** documentation drift or mixed terminology; rollback by reverting milestone-local doc edits.
+- **Checkpoint update:** record gate evidence and next-step prompt in status/checkpoint.
 
-### Milestone 2 (ID: MILESTONE-2) — Subtitle/discovery safety coverage expansion
-- **Objective:** Add focused tests around highest-risk media-selection edges before feature work.
-- **Scope / files:** `tests/suite_discovery.sh`, `tests/suite_selection.sh`, optional fixtures under `tests/fixtures/`.
+### Milestone 1 (ID: MILESTONE-1) — High-risk runtime validation contract
+- **Objective:** Define a concrete runtime confidence contract for high-risk stream-selection/subtitle/ffmpeg mapping paths.
+- **Scope / files:** `docs/codex/PLAN.md`, `docs/codex/STATUS.md`, relevant runbook/checkpoint docs, and targeted runtime-validation planning docs.
 - **Commands:**
-  - `bash scripts/check-fast.sh`
-  - `./tests/run.sh tests/suite_discovery.sh tests/suite_selection.sh`
-  - `bash scripts/check-full.sh`
-- **Completion criteria:** new tests cover identified edge cases and pass consistently on Bash 3.2-compatible shell.
-- **Risks / rollback:** flaky fixture assumptions; rollback by removing unstable fixture paths.
-- **Checkpoint update:** log new scenarios and any unresolved edge-case risks.
-
-### Milestone 3 (ID: MILESTONE-3) — Operator-facing runbook + resume reliability
-- **Objective:** Ensure long-running Codex tasks can be resumed and handed off cleanly.
-- **Scope / files:** `docs/codex/RUNBOOK.md`, `docs/codex/STATUS.md`, `.codex/checkpoints/*.md`, optionally `AGENTS.md` for clarified routing.
-- **Commands:**
+  - narrow planning checks for changed docs/contracts
   - `bash scripts/check-fast.sh`
   - `bash scripts/check-changed.sh HEAD~1`
-- **Completion criteria:** runbook includes startup, checkpoint, and handoff instructions tied to actual repo scripts.
-- **Risks / rollback:** documentation drift; rollback by reverting runbook-only changes.
-- **Checkpoint update:** finalize status with current milestone, command evidence, and next action owner prompt.
+- **Completion criteria:** agreed representative edge-case matrix and validation expectations are explicit, test-targeted, and ready for runtime implementation milestones.
+- **Risks / rollback:** over-broad matrix or unclear ownership; rollback by narrowing contract to risk-focused representative cases.
+- **Checkpoint update:** capture contract, open risks, and first implementation-ready runtime milestone.
 
-### Milestone 4 (ID: MILESTONE-4) — Subtitle ranking parity hardening
-- **Objective:** Reduce ranking-policy drift risk between `select_internal_subtitles` and `build_subtitle_plan` with focused parity assertions.
-- **Scope / files:** `tests/suite_selection.sh`, `tests/suite_ffmpeg.sh`, optional fixtures under `tests/fixtures/`.
-- **Commands:**
-  - `bash scripts/check-fast.sh`
-  - `./tests/run.sh tests/suite_selection.sh`
-  - `./tests/run.sh tests/suite_ffmpeg.sh`
-  - `bash scripts/check-changed.sh HEAD~1`
-- **Completion criteria:** added/updated tests assert aligned ranking outcomes across internal selection and ffmpeg subtitle plan behavior for shared policy scenarios.
-- **Risks / rollback:** fixture overfitting can hide real drift; rollback by removing brittle assertions and retaining only deterministic parity cases.
-- **Checkpoint update:** record parity scenarios, command results, unresolved policy ambiguities, and explicit next-step handoff prompt.
+### Milestone 2 (ID: MILESTONE-2) — Thin local GUI over canonical runtime
+- **Objective:** Keep GUI framing/operator flow aligned with CLI canonical behavior.
+- **Scope / files:** runtime + docs touched by GUI/runtime interface alignment.
+- **Commands:** milestone-specific runtime checks, then standard validation order.
+- **Completion criteria:** GUI remains thin/operator-oriented with no drift from canonical CLI contract.
+- **Risks / rollback:** accidental consumer-GUI scope creep; rollback by restoring CLI-first boundaries.
+- **Checkpoint update:** log boundary checks and contract parity evidence.
 
-### Milestone 5 (ID: MILESTONE-5) — Subtitle ranking policy consolidation
-- **Objective:** Reduce future drift by consolidating shared subtitle ranking policy so `select_internal_subtitles` and `build_subtitle_plan` use the same scoring path.
-- **Scope / files:** `scripts/lib/media_filters.sh`, `tests/suite_selection.sh`, `tests/suite_ffmpeg.sh`, optional fixtures under `tests/fixtures/`, and affected `docs/project-files/*` summaries if workflow/validation expectations change.
-- **Commands:**
-  - `bash scripts/check-fast.sh`
-  - `./tests/run.sh tests/suite_selection.sh tests/suite_ffmpeg.sh`
-  - `bash scripts/check-changed.sh HEAD~1`
-  - `bash scripts/check-full.sh`
-- **Completion criteria:** shared ranking helper/path is used for both internal selection and subtitle-plan construction, parity scenarios remain green, and no regression is observed in existing subtitle fixture coverage.
-- **Risks / rollback:** ranking-policy merge can introduce subtle ordering regressions; rollback by reverting consolidation changes and retaining parity tests that expose divergence.
-- **Checkpoint update:** record consolidation scope, touched ranking call sites, command evidence, unresolved policy questions, and explicit next-step owner prompt.
+### Milestone 3 (ID: MILESTONE-3) — Packaging and cross-platform operator readiness
+- **Objective:** Close v1 packaging/distribution readiness gaps for local operators.
+- **Scope / files:** packaging scripts/config/docs and release-facing validation paths.
+- **Commands:** milestone-specific packaging checks, then standard validation order (full checks when justified).
+- **Completion criteria:** cross-platform operator install/use path is stable and documented.
+- **Risks / rollback:** packaging regressions; rollback by reverting packaging-local changes and restoring known-good release contract.
+- **Checkpoint update:** record packaging evidence, residual gaps, and release readiness delta.
 
-### Milestone 6 (ID: MILESTONE-6) — Control-plane follow-up hardening cleanup
-- **Objective:** Close non-blocking hardening follow-ups by reducing prompt-path discoverability drift and adding lightweight doc-level prompt-reference conformance checks.
-- **Scope / files:** `README.md`, `docs/project-files/validation-summary.md`, `scripts/codex/check-workflow-conformance.sh`, `docs/codex/WORKFLOW_VERSION.md`, `.codex/checkpoints/README.md`, `docs/codex/STATUS.md`, `.codex/checkpoints/MILESTONE-6.md`.
-- **Commands:**
-  - `bash scripts/codex/check-workflow-conformance.sh`
-  - `bash scripts/check-fast.sh`
-  - `bash scripts/check-changed.sh HEAD~1`
-  - `git ls-remote --tags origin`
-  - `gh release list`
-- **Completion criteria:** canonical prompt-pack path is explicitly documented in README, downstream validation summary reflects milestone-specific-first ordering, conformance script checks for legacy prompt-name references in current control-plane docs, and remote release/tag evidence is captured (or explicitly recorded as not evidenced with command output).
-- **Risks / rollback:** docs/script-only risk; rollback by reverting milestone-local control-plane changes.
-- **Checkpoint update:** record commands, pass/fail/skip evidence, and residual risks in `docs/codex/STATUS.md` and `.codex/checkpoints/MILESTONE-6.md`.
-
-## Preferred validation after each milestone
-```bash
-bash scripts/check-fast.sh
-bash scripts/check-changed.sh HEAD~1
-```
-
-## Final handoff validation
-```bash
-bash scripts/check-fast.sh
-bash scripts/check-full.sh
-```
-
-### Milestone 7 (ID: MILESTONE-7) — Final prompt-pack baseline migration verification
-- **Objective:** Apply one-time final Codex prompt-pack baseline verification with minimal diff and no workflow redesign.
-- **Scope / files:** `docs/codex/WORKFLOW_VERSION.md`, `docs/codex/STATUS.md`, optional directly affected control-plane docs only if drift is found.
-- **Commands:**
-  - `bash scripts/codex/check-workflow-conformance.sh`
-  - `bash scripts/check-fast.sh`
-  - `bash scripts/check-changed.sh HEAD~1`
-- **Completion criteria:** canonical prompt path and final filename set are verified, stale active-doc prompt refs are absent, and required conformance/fast validation passes.
-- **Risks / rollback:** low-risk control-plane doc drift; rollback by reverting milestone-7 doc/status updates.
-- **Checkpoint update:** record migration verification evidence and any follow-ups in `docs/codex/STATUS.md` and `.codex/checkpoints/MILESTONE-7.md`.
+### Milestone 4 (ID: MILESTONE-4) — v1 release gate
+- **Objective:** Confirm the v1 production-usable bar and finalize release narrative alignment.
+- **Scope / files:** release/version docs, checklist/status artifacts, and final gate evidence.
+- **Commands:** milestone-specific release checks, `bash scripts/check-fast.sh`, `bash scripts/check-full.sh`.
+- **Completion criteria:** safety defaults/gates, deterministic behavior, repeat-run safety, representative edge-case confidence, and docs/package alignment are all evidenced.
+- **Risks / rollback:** unresolved high-risk behavior; rollback by deferring release and reopening targeted runtime milestones.
+- **Checkpoint update:** record pass/fail gate outcome and follow-up actions.

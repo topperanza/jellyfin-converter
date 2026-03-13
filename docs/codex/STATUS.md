@@ -1,70 +1,44 @@
 # Codex Run Status
 
-_Last updated: 2026-03-12 11:00 UTC_
+_Last updated: 2026-03-13_
 
-## Current task
-- Completed `MILESTONE-7` final prompt-pack baseline migration verification.
-- Verified canonical prompt-pack path and final filename set remain active with no stale active-doc legacy prompt references.
-- Re-ran conformance/fast/changed validation to confirm migration readiness without workflow redesign.
+## Current task snapshot
+- Completed documentation realignment for product vision/scope/version boundary consistency.
+- Product docs now present a narrow safety-first local conversion story with CLI canonical and thin local GUI framing.
+- Control-plane docs now point to a runtime-focused next milestone centered on high-risk mapping confidence.
 
 ## Current milestone
-- ID: none (awaiting next numbered implementation milestone)
-- Title: none
-- Goal: keep plan/status aligned before next runtime milestone.
-- Completion criteria: next numbered milestone activated in `docs/codex/PLAN.md` and mirrored here.
+- ID: MILESTONE-1
+- Title: High-risk runtime validation contract
+- Goal: define representative, risk-focused confidence requirements for stream-selection/subtitle/ffmpeg mapping behavior before runtime code changes.
+- Completion criteria: milestone contract drafted and approved in plan/status artifacts with explicit validation expectations and non-goal boundaries.
 
 ## Last completed milestone
-- ID: MILESTONE-7
-- Goal: apply one-time migration verification for final prompt-pack/control-plane baseline with minimal scope.
-- Checkpoint: `.codex/checkpoints/MILESTONE-7.md`
+- ID: MILESTONE-0
+- Goal: scope + release narrative alignment across user-facing and control-plane docs.
+- Checkpoint: this status update + commit for documentation realignment.
 
-## Additional completed closure (outside numbered plan milestones)
-- ID: MILESTONE-6
-- Goal: close control-plane hardening follow-ups for prompt-path clarity, downstream summary alignment, and doc-level legacy prompt-reference enforcement.
-- Checkpoint: `.codex/checkpoints/MILESTONE-6.md`
-- ID: MILESTONE-control-plane-hardening-followups
-- Goal: implement hardening follow-ups for CI conformance gate, legacy prompt-name checkpoint annotation, and stronger prompt-pack schema checks.
-- Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-hardening-followups.md`
-- ID: MILESTONE-control-plane-hardening-rollout
-- Goal: harden Codex control plane with executable conformance checks, workflow versioning, and canonical prompt-path consistency.
-- Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-hardening-rollout.md`
-- ID: MILESTONE-5
-- Goal: reduce future drift by consolidating shared subtitle ranking policy.
-- Checkpoint: `.codex/checkpoints/MILESTONE-5.md`
-- ID: MILESTONE-docs-project-files
-- Goal: keep canonical low-churn project summaries and milestone sync guidance aligned.
-- Checkpoint: `.codex/checkpoints/MILESTONE-docs-project-files.md`
-- ID: MILESTONE-control-plane-prompt-pack
-- Goal: close control-plane patch tracking for RUNBOOK routing, cloud checklist, and usage-prompts pack.
-- Checkpoint: `.codex/checkpoints/MILESTONE-control-plane-prompt-pack.md`
-
-## Files touched
+## Files touched in MILESTONE-0
+- `README.md`
+- `docs/scope.md`
+- `docs/architecture.md`
+- `docs/NEXT_STEPS.md`
 - `docs/codex/PLAN.md`
-- `docs/codex/WORKFLOW_VERSION.md`
 - `docs/codex/STATUS.md`
-- `.codex/checkpoints/MILESTONE-7.md`
+- `docs/project-files/product-summary.md`
+- `docs/project-files/architecture-summary.md`
+- `docs/project-files/workflow-invariants.md`
+- `docs/project-files/decision-log.md`
+- `CHANGELOG.md`
 
-## Commands run
-- `test -d docs/codex/usage-prompts`
-- prompt-file existence loop for final expected baseline files
-- legacy prompt-reference scan across active control-plane docs and scripts
-- `bash scripts/codex/check-workflow-conformance.sh`
-- `bash scripts/check-fast.sh`
-- `bash scripts/check-changed.sh HEAD~1`
+## Validation evidence (MILESTONE-0)
+- Pass: `bash scripts/check-fast.sh`
+- Pass: `bash scripts/check-changed.sh HEAD~1`
+- Note: `./run.sh --self-check` was skipped inside fast checks because `ffmpeg`/`ffprobe` are unavailable in this environment.
 
-## Results
-- Pass: canonical prompt-pack path remains `docs/codex/usage-prompts`.
-- Pass: final expected prompt-pack file baseline is present.
-- Pass: no stale legacy prompt references found in active control-plane docs.
-- Pass: `bash scripts/codex/check-workflow-conformance.sh`.
-- Pass: `bash scripts/check-fast.sh`.
-- Pass: `bash scripts/check-changed.sh HEAD~1`.
-
-## Blockers
-- none
-
-## Known risks
-- `bash scripts/check-full.sh` not run because this migration is docs/control-plane verification scoped (no converter runtime logic change).
+## Known risks / follow-ups
+- Runtime confidence for high-risk stream-selection/subtitle/mapping paths still requires explicit milestone-level validation contract work (MILESTONE-1).
+- GUI scope must continue to be described as thin/operator-only until runtime/UI evidence justifies broader claims.
 
 ## Next step
-- Start next numbered runtime milestone from `docs/codex/PLAN.md` when scheduled.
+- Execute `MILESTONE-1` planning/review only (no runtime implementation yet): define validation matrix, acceptance criteria, and targeted test-entrypoint strategy for high-risk paths.
