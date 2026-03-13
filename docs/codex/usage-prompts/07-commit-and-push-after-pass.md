@@ -53,4 +53,11 @@ B) Artifacts
 C) Verification  
 D) Tracking surfaces  
 E) Leftovers  
-F) Follow-ups
+F) Follow-ups  
+G) Next suggested prompt
+
+Next suggested prompt rules:  
+\- If this push completes normal milestone work:  
+  \`No next prompt needed.\`  
+\- If this push specifically completes release-prep fixes and the release is approved:  
+  \`09-tag-and-release.md\`

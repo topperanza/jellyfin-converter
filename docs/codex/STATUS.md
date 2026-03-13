@@ -47,7 +47,7 @@ _Last updated: 2026-03-12 11:00 UTC_
 ## Commands run
 - `test -d docs/codex/usage-prompts`
 - prompt-file existence loop for final expected baseline files
-- `rg -n "docs/codex/usage-prompts/(00-README-usage-order\.md|07-commit-push-after-pass\.md|08-full-repo-audit-recovery\.md|09-release-prep\.md|1[0-9]-.*\.md)" README.md AGENTS.md docs/codex scripts .codex/checkpoints/README.md`
+- legacy prompt-reference scan across active control-plane docs and scripts
 - `bash scripts/codex/check-workflow-conformance.sh`
 - `bash scripts/check-fast.sh`
 - `bash scripts/check-changed.sh HEAD~1`

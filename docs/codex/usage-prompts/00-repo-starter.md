@@ -60,11 +60,8 @@ Path discovery / creation rules:
    - If a different existing Codex docs location is clearly established, reuse it  
    - Otherwise create \[REPO_ROOT\]/docs/codex  
 2\. Set \[PROMPTS_DIR\]:  
-   - Prefer an existing directory in this order:  
-     a) \[REPO_ROOT\]/docs/codex/usage-prompts  
-     b) \[REPO_ROOT\]/prompts/usage  
-     c) \[REPO_ROOT\]/docs/prompts/usage  
-   - If none exists, create \[REPO_ROOT\]/docs/codex/usage-prompts  
+   - Use \[REPO_ROOT\]/docs/codex/usage-prompts  
+   - If it does not exist, create \[REPO_ROOT\]/docs/codex/usage-prompts  
 3\. Set \[PROJECT_FILES_DIR\]:  
    - Use \[REPO_ROOT\]/docs/project-files
 
@@ -107,9 +104,9 @@ Required deliverables:
 \- \[CODEX_DOCS_DIR\]/CLOUD_ENV_CHECKLIST.md  
 \- \[CODEX_DOCS_DIR\]/WORKFLOW_VERSION.md  
 \- \[PROJECT_FILES_DIR\]/  
-\- \[PROMPTS_DIR\]/0000-README-usage-order.md or equivalent index/readme  
-\- a release-prep review prompt in \[PROMPTS_DIR\]  
-\- a final tag-and-release prompt in \[PROMPTS_DIR\]
+\- \[PROMPTS_DIR\]/0000-README-usage-order.md  
+\- \[PROMPTS_DIR\]/08-release-prep.md  
+\- \[PROMPTS_DIR\]/09-tag-and-release.md
 
 Optional when justified:  
 \- \[REPO_ROOT\]/scripts/check-changed.sh  
@@ -133,4 +130,13 @@ Output format:
   1) very short summary of what was added/changed  
   2) exact validation commands run  
   3) assumptions made  
-  4) items intentionally skipped and why
+  4) items intentionally skipped and why  
+  5) Next suggested prompt
+
+Next suggested prompt rules:  
+\- If repo initialization succeeded and milestone work can begin:  
+  \`01-next-milestone-planner.md\`  
+\- If setup/control-plane blockers remain:  
+  \`04-blocker-patch.md\`  
+\- If the repo is not ready for either:  
+  \`No next prompt needed.\`

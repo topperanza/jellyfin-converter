@@ -58,4 +58,13 @@ E) Non-blocking follow-ups
 F) Release readiness decision  
 G) If blocked: exact pre-release fix list  
 H) If passed: concise release checklist  
-I) Final short summary
+I) Final short summary  
+J) Next suggested prompt
+
+Next suggested prompt rules:  
+\- If READY FOR RELEASE and no additional changes were required:  
+  \`09-tag-and-release.md\`  
+\- If READY FOR RELEASE but release-prep fixes were made and still need commit/push:  
+  \`07-commit-and-push-after-pass.md\`  
+\- If FIX RELEASE BLOCKERS FIRST:  
+  \`04-blocker-patch.md\`

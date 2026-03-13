@@ -101,7 +101,8 @@ A) Repository milestone position
 B) Audit matrix  
 C) Critical drift / blockers  
 D) Recovery plan  
-E) Final recommendation
+E) Final recommendation  
+F) Next suggested prompt
 
 Use statuses only:  
 \- PASS  
@@ -109,3 +110,11 @@ Use statuses only:
 \- BLOCKED  
 \- CONCERN  
 \- NOT EVIDENCED
+
+Next suggested prompt rules:  
+\- If the repo can return to normal flow and the next milestone is clear:  
+  \`01-next-milestone-planner.md\`  
+\- If direct blockers need repair first:  
+  \`04-blocker-patch.md\`  
+\- If recovery status is still too unclear:  
+  \`No next prompt needed.\`

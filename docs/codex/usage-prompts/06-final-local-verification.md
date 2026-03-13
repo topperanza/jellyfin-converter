@@ -45,4 +45,11 @@ B) Verification matrix
 C) Validation performed  
 D) Remaining blocker if any  
 E) Final recommendation  
-F) Short summary
+F) Short summary  
+G) Next suggested prompt
+
+Next suggested prompt rules:  
+\- If READY FOR COMMIT/PUSH:  
+  \`07-commit-and-push-after-pass.md\`  
+\- If ONE LAST PATCH NEEDED:  
+  \`04-blocker-patch.md\`

@@ -42,12 +42,12 @@ Then:
 Use only after milestone work is complete and committed state is ready.
 
 1\. \`08-release-prep.md\`  
-2\. \`07-commit-and-push-after-pass.md\` if final release-prep fixes were made  
+2\. \`07-commit-and-push-after-pass.md\` if release-prep fixes were made and still need committing/pushing  
 3\. \`09-tag-and-release.md\`
 
 Release order is always:  
 \- release-prep review  
-\- final commit/push  
+\- final commit/push if needed  
 \- tag + release
 
 \## Recovery flow
@@ -91,3 +91,8 @@ Do not use:
 \- release-prep as a general cleanup prompt
 
 Keep scope tight.
+
+\## Deferred for now
+
+Cross-repository synchronization is intentionally not part of this baseline prompt pack.  
+Apply rollout and review flows one repository at a time.

@@ -71,8 +71,15 @@ Output format (strict):
 2\. Pre-release checks  
 3\. Actions taken  
 4\. Verification  
-5\. Final status
+5\. Final status  
+6\. Next suggested prompt
 
 Final status values:  
 \- TAG AND RELEASE CREATED SUCCESSFULLY  
 \- BLOCKED
+
+Next suggested prompt rules:  
+\- If TAG AND RELEASE CREATED SUCCESSFULLY:  
+  \`No next prompt needed.\`  
+\- If BLOCKED:  
+  \`04-blocker-patch.md\`

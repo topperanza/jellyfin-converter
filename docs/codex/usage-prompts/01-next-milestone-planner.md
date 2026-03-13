@@ -40,4 +40,8 @@ D) Exact implementation scope
 E) Validation plan  
 F) Required docs/exports  
 G) Success criteria  
-H) Risks / assumptions
+H) Risks / assumptions  
+I) Next suggested prompt
+
+Next suggested prompt:  
+\- \`02-milestone-implementation.md\`

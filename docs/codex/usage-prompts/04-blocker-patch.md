@@ -30,4 +30,8 @@ A) Blockers addressed
 B) Files changed  
 C) Validation performed  
 D) Remaining blocker risk  
-E) Status
+E) Status  
+F) Next suggested prompt
+
+Next suggested prompt:  
+\- \`05-blocker-closure-check.md\`

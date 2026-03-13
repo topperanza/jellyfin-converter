@@ -35,4 +35,8 @@ B) Files changed
 C) Validation performed  
 D) Docs updated  
 E) Follow-ups  
-F) Completion status
+F) Completion status  
+G) Next suggested prompt
+
+Next suggested prompt:  
+\- \`03-milestone-gate.md\`

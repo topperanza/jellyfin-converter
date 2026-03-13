@@ -34,8 +34,17 @@ A) Milestone contract
 B) Gate findings  
 C) Blocking issues only  
 D) Non-blocking follow-ups  
-E) Decision
+E) Decision  
+F) Next suggested prompt
 
 Decision values:  
 \- SAFE TO MOVE ON  
 \- BLOCKED
+
+Next suggested prompt rules:  
+\- If SAFE TO MOVE ON and local verification is needed:  
+  \`06-final-local-verification.md\`  
+\- If SAFE TO MOVE ON and no local verification is needed:  
+  \`07-commit-and-push-after-pass.md\`  
+\- If BLOCKED:  
+  \`04-blocker-patch.md\`

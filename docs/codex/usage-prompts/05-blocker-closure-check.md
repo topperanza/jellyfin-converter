@@ -24,8 +24,17 @@ A) Blocker closure matrix
 B) Regression check  
 C) Decision  
 D) Remaining blockers only  
-E) If passed: confirm repo is ready for next step
+E) If passed: confirm repo is ready for next step  
+F) Next suggested prompt
 
 Decision values:  
 \- SAFE TO MOVE ON  
 \- STILL BLOCKED
+
+Next suggested prompt rules:  
+\- If SAFE TO MOVE ON and local verification is needed:  
+  \`06-final-local-verification.md\`  
+\- If SAFE TO MOVE ON and no local verification is needed:  
+  \`07-commit-and-push-after-pass.md\`  
+\- If STILL BLOCKED:  
+  \`04-blocker-patch.md\`
