@@ -49,7 +49,7 @@ Decision values:
 
 Next suggested prompt rules:
 - If `SAFE TO MOVE ON` and local verification is needed:
-  `06A-local-handoff+verification.md` or `06B-local-verification.md`
+  `06A-local-handoff+verification` or `06B-local-verification`
 - If `SAFE TO MOVE ON` and no local verification is needed:
   `07A-commit-push.md`
 - If `BLOCKED`:

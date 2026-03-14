@@ -50,10 +50,13 @@ Required procedure:
    - `bash scripts/check-fast.sh`
    - `bash scripts/check-changed.sh` if present and relevant
    - `bash scripts/check-full.sh` only if justified by release risk
-6. Classify unresolved items as:
+6. Verify remote release state (capture output or record `NOT EVIDENCED` with reason if unavailable):
+   - `git ls-remote --tags origin`
+   - `gh release list`
+7. Classify unresolved items as:
    - `RELEASE BLOCKER`
    - `NON-BLOCKING FOLLOW-UP`
-7. Decide:
+8. Decide:
    - `READY FOR RELEASE`
    - `FIX RELEASE BLOCKERS FIRST`
 
