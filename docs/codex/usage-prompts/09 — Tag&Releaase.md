@@ -1,4 +1,8 @@
+\# 09 — Tag&Releaase.md
+
 Implementation task.
+
+Run this with a local-capable agent only.
 
 Repo:  
 \[REPO_NAME\]
@@ -18,10 +22,11 @@ Do NOT perform opportunistic cleanup.
 
 Primary objective:  
 1\. verify the repo is in a clean, releasable state  
-2\. create the correct release tag  
-3\. push the tag if needed  
-4\. create the GitHub release  
-5\. verify that the tag and release now exist remotely
+2\. derive the correct release tag from repo truth  
+3\. create the tag  
+4\. push the tag if needed  
+5\. create the GitHub release  
+6\. verify that the tag and release now exist remotely
 
 Hard rules:  
 \- Use the existing repo remote configuration; do not switch remotes from SSH to HTTPS.  
@@ -33,11 +38,12 @@ Hard rules:
 \- Do NOT modify workflow semantics, prompts, or control-plane content as part of this task.  
 \- If a blocker exists, stop and report it instead of improvising.
 
-Source of truth for release metadata:  
-1\. code/tests/runtime/config  
-2\. docs/codex/WORKFLOW_VERSION.md  
-3\. CHANGELOG.md  
-4\. README / release docs if relevant
+Source-of-truth order for release metadata:  
+1\. code / tests / runtime / config / package metadata  
+2\. \`docs/agent-workflow/\*\` if present  
+3\. \`docs/codex/WORKFLOW_VERSION.md\`  
+4\. \`CHANGELOG.md\`  
+5\. \`README.md\` / release docs if relevant
 
 Required method:  
 A. Inspect release state  
@@ -48,15 +54,17 @@ E. Create GitHub release
 F. Verify remote release state
 
 Check at minimum:  
-\- git status --short  
-\- git branch --show-current  
-\- git log --oneline -n 5  
-\- git tag --list  
-\- git ls-remote --tags origin  
-\- gh release list  
-\- gh release view \[TAG\] after creation  
-\- docs/codex/WORKFLOW_VERSION.md  
-\- CHANGELOG.md if present
+\- \`git status --short\`  
+\- \`git branch --show-current\`  
+\- \`git log --oneline -n 5\`  
+\- \`git tag --list\`  
+\- \`git ls-remote --tags origin\`  
+\- \`gh auth status\`  
+\- \`gh release list\`  
+\- \`gh release view \[TAG\]\` after creation  
+\- \`docs/agent-workflow/\*\` if relevant  
+\- \`docs/codex/WORKFLOW_VERSION.md\` if present  
+\- \`CHANGELOG.md\` if present
 
 Success criteria:  
 \- release metadata is coherent  
@@ -75,11 +83,11 @@ Output format (strict):
 6\. Next suggested prompt
 
 Final status values:  
-\- TAG AND RELEASE CREATED SUCCESSFULLY  
-\- BLOCKED
+\- \`TAG AND RELEASE CREATED SUCCESSFULLY\`  
+\- \`BLOCKED\`
 
 Next suggested prompt rules:  
-\- If TAG AND RELEASE CREATED SUCCESSFULLY:  
+\- If \`TAG AND RELEASE CREATED SUCCESSFULLY\`:  
   \`No next prompt needed.\`  
-\- If BLOCKED:  
-  \`04-blocker-patch.md\`
+\- If \`BLOCKED\`:  
+  \`04 — Blocker patch.md\`
