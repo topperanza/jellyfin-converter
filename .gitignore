@@ -47,3 +47,6 @@ pr_body.md
 
 # Codex local state
 .codex/env.sh
+
+# Local secrets (copy from .env.example; never commit)
+.env

@@ -1,0 +1,24 @@
+# Aider configuration for jellyfin-converter
+# See docs/agent-workflow/DUAL_AGENT_ALIGNMENT.md for Aider alignment details.
+# See .env.example for required API key environment variables.
+
+# Read-only context: load canonical workflow docs so Aider has workflow awareness.
+# These files are loaded as context but Aider will not edit them unless explicitly asked.
+read:
+  - docs/agent-workflow/README.md
+  - docs/agent-workflow/WORKFLOW_ORDER.md
+  - docs/agent-workflow/NON_NEGOTIABLES.md
+  - docs/agent-workflow/SOURCE_OF_TRUTH.md
+  - AGENTS.md
+
+# Git: auto-commit is off; follow the canonical commit/push workflow (07A-commit-push.md).
+auto-commits: false
+
+# Lint: run syntax check on changed shell files.
+# Full validation follows the canonical order in docs/agent-workflow/WORKFLOW_ORDER.md.
+lint-cmd: bash -n
+
+# Model: set via AIDER_MODEL env var or --model flag at runtime.
+# Do not hardcode a model here; set in .env (not tracked) or on the command line.
+# Example: aider --model anthropic/claude-sonnet-4-6
+# model: placeholder — set at runtime or via AIDER_MODEL env var
