@@ -24,7 +24,7 @@ If `docs/agent-workflow/*` is missing, treat `docs/codex/*` as the current contr
 | `WORKFLOW_ORDER.md` | Standard workflow sequence encoded by the prompt pack |
 | `PROMPT_PACK_MAP.md` | Codex prompt-pack index, intent, and old→new migration map |
 | `NON_NEGOTIABLES.md` | Hard rules evidenced from the repo and prompt pack |
-| `DUAL_AGENT_ALIGNMENT.md` | Codex + Claude + Aider role assignments and handoff points |
+| `TRIPLE_AGENT_ALIGNMENT.md` | Codex + Claude + Aider role assignments and handoff points |
 
 ## Adapter files (not primary source of truth)
 

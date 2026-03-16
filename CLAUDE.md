@@ -6,7 +6,7 @@
 2. `docs/codex/PLAN.md`, `STATUS.md`, `RUNBOOK.md`, `DOC_SYNC_MATRIX.md` — Codex control plane
 3. This file — Claude Code adapter (local verification and commit/push entry point)
 
-See `docs/agent-workflow/DUAL_AGENT_ALIGNMENT.md` for full agent role map.
+See `docs/agent-workflow/TRIPLE_AGENT_ALIGNMENT.md` for full agent role map.
 
 ## Purpose
 
