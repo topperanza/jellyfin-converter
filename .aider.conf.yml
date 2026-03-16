@@ -1,0 +1,25 @@
+# Aider configuration — jellyfin-converter
+#
+# Do NOT store secrets or API keys here.
+# Set ANTHROPIC_API_KEY or OPENAI_API_KEY in a local .env file (untracked).
+# See .env.example for expected variable names.
+#
+# This config is minimal and provider-agnostic.
+# Workflow instructions live in docs/agent-workflow/, not here.
+
+# Never auto-commit — changes are reviewed and committed explicitly per repo workflow.
+auto-commits: false
+
+# Never auto-lint — run validation manually: bash scripts/check-fast.sh
+auto-lint: false
+
+# Respect .gitignore
+gitignore: true
+
+# Load canonical shared workflow docs as read-only context.
+# These inform Aider of repo non-negotiables without duplicating instructions here.
+read:
+  - docs/agent-workflow/README.md
+  - docs/agent-workflow/NON_NEGOTIABLES.md
+  - docs/agent-workflow/WORKFLOW_ORDER.md
+  - AGENTS.md
