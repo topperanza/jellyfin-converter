@@ -47,3 +47,9 @@ pr_body.md
 
 # Codex local state
 .codex/env.sh
+
+# Local secrets (never commit)
+.env
+.claude/settings.local.json
+.aider.chat.history.md
+.aider.input.history
