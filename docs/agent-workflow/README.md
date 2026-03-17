@@ -15,6 +15,10 @@ Read workflow truth in this order:
 
 If `docs/agent-workflow/*` is missing, treat `docs/codex/*` as the current control plane.
 
+## Current task state
+- `../../HANDOFF.md`
+- `../../PROJECT_CONTEXT.md`
+
 ## Contents
 
 | File | Purpose |
@@ -22,9 +26,13 @@ If `docs/agent-workflow/*` is missing, treat `docs/codex/*` as the current contr
 | `README.md` | This file — entry point and discovery order |
 | `SOURCE_OF_TRUTH.md` | Where truth lives for each concern |
 | `WORKFLOW_ORDER.md` | Standard workflow sequence encoded by the prompt pack |
+| `VALIDATION_ORDER.md` | When to use check-fast vs check-changed vs check-full |
 | `PROMPT_PACK_MAP.md` | Codex prompt-pack index, intent, and old→new migration map |
 | `NON_NEGOTIABLES.md` | Hard rules evidenced from the repo and prompt pack |
 | `TRIPLE_AGENT_ALIGNMENT.md` | Codex + Claude + Aider role assignments and handoff points |
+| `ADAPTER_CONTRACT.md` | Contract for keeping adapter files thin and non-authoritative |
+| `CLOUD_TO_LOCAL_HANDOFF.md` | Required contents and process for cloud-to-local handoffs |
+| `COMMIT_RELEASE.md` | Commit gate rules and release sequencing |
 
 ## Adapter files (not primary source of truth)
 

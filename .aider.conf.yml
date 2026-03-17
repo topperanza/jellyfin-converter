@@ -13,6 +13,12 @@ auto-commits: false
 # Never auto-lint — run validation manually: bash scripts/check-fast.sh
 auto-lint: false
 
+# Never commit with uncommitted changes already present.
+dirty-commits: false
+
+# Fast validation gate — runs on /test in Aider.
+test-cmd: bash scripts/check-fast.sh
+
 # Respect .gitignore
 gitignore: true
 

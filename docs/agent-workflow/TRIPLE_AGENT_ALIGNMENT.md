@@ -1,4 +1,4 @@
-# Dual-Agent Alignment (Codex + Claude + Aider)
+# Triple-Agent Alignment (Codex + Claude + Aider)
 
 This repository operates with three agents across two environments.
 This file defines each agent's role, primary reading list, and handoff points.

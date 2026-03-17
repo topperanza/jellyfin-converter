@@ -8,6 +8,10 @@
 
 See `docs/agent-workflow/TRIPLE_AGENT_ALIGNMENT.md` for full agent role map.
 
+## Current task state
+- HANDOFF.md
+- PROJECT_CONTEXT.md
+
 ## Purpose
 
 Claude Code is the local agent for this repository.
@@ -21,15 +25,6 @@ and environment-sensitive fixes that require real local tooling.
 - Commit and push: `docs/codex/usage-prompts/07A-commit-push.md`
 - Tag and release: `docs/codex/usage-prompts/09-tag&release.md`
 
-## Validation order
-
-Same canonical order as all other agents:
-
-1. Narrow milestone-specific validation first
-2. `bash scripts/check-fast.sh`
-3. `bash scripts/check-changed.sh` — only if present and relevant
-4. `bash scripts/check-full.sh` — only if justified by scope or risk
-
 ## Repo-specific notes
 
 - Runtime: Bash CLI (`run.sh`, `scripts/jellyfin_converter.sh`); requires `ffmpeg` + `ffprobe` for conversion
@@ -38,11 +33,6 @@ Same canonical order as all other agents:
 - Target environment: macOS/Linux, Bash 3.2+
 - High-risk paths: ffmpeg command generation, codec/container selection, stream mapping, subtitle/metadata handling
 
-## Hard rules (summary)
+## Hard rules
 
-Full list in `docs/agent-workflow/NON_NEGOTIABLES.md`. Key points:
-- Never commit secrets or API keys.
-- Keep diffs narrow and task-scoped.
-- No force-push; no history rewriting.
-- `docs/project-files/*` is downstream export only.
-- Milestone gate is contract-scoped, not a full audit.
+See `docs/agent-workflow/NON_NEGOTIABLES.md` for the full list.
