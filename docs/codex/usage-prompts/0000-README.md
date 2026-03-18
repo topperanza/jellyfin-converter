@@ -4,7 +4,7 @@
 
 This folder contains the Codex-facing prompt pack for this repository.
 
-The pack is designed to remain usable in a dual-agent workflow:
+The pack is designed to remain usable in a triple-agent workflow:
 - durable workflow truth must live in the repository
 - `docs/agent-workflow/*` is canonical if present
 - `docs/codex/*` is the Codex-facing control-plane layer

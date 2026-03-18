@@ -1,7 +1,3 @@
-interface:
-  display_name: MTT Commit Push Tracker
-  short_description: Verify scope and checks, then commit and push milestone-aware changes safely.
-  default_prompt: |
-    Use $mtt-commit-push-tracker to finalize this milestone with coherent commit/push tracking.
+name: mtt-commit-push-tracker
 policy:
   allow_implicit_invocation: false

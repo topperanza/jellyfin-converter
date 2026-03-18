@@ -1,3 +1,10 @@
+---
+name: next-milestone-planner
+description: Identify and define the next milestone-sized unit of work without implementing changes
+---
+
+> Canonical source: docs/codex/usage-prompts/01-next-milestone-planner.md
+
 # 01-next-milestone-planner.md
 
 Planning task for the current repository.
@@ -10,8 +17,8 @@ Hard rules:
 - Do NOT broaden into a full repo redesign.
 - Do NOT reopen completed milestone history without direct regression evidence.
 - Use canonical workflow docs first:
-  1. `docs/agent-workflow/*` if present
-  2. `docs/codex/*`
+  1. `docs/agent-workflow/*` if present
+  2. `docs/codex/*`
 - Use `DOC_SYNC_MATRIX.md` to determine which documentation surfaces are likely to matter.
 - Treat `docs/project-files/*` as downstream export only unless explicitly required by the canonical workflow docs.
 
@@ -30,14 +37,14 @@ Required procedure:
 2. Identify the highest-leverage next milestone
 3. Keep milestone size narrow, testable, and reviewable
 4. Define:
-   - objective
-   - constraints
-   - likely files/modules
-   - validation plan
-   - required canonical docs and required adapters
-   - required exports per `DOC_SYNC_MATRIX.md`
-   - success criteria
-   - rollback notes if relevant
+   - objective
+   - constraints
+   - likely files/modules
+   - validation plan
+   - required canonical docs and required adapters
+   - required exports per `DOC_SYNC_MATRIX.md`
+   - success criteria
+   - rollback notes if relevant
 
 Output:
 A) Current state summary

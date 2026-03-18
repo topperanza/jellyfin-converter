@@ -1,3 +1,3 @@
-name: mtt-repo-milestone-review
+name: commit-push
 policy:
   allow_implicit_invocation: false

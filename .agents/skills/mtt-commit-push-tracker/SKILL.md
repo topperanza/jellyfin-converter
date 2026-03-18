@@ -1,30 +1,24 @@
 ---
 name: mtt-commit-push-tracker
-description: Use this skill after implementation is complete to verify changed scope, run the lightest sufficient checks, ensure DOC_SYNC_MATRIX tracking surfaces are covered, and produce coherent milestone-aware commit/push steps. Do not use for milestone gating decisions.
+description: Verify commit/push tracking surfaces after gate has passed.
 ---
 
 # mtt-commit-push-tracker
 
-## Trigger when
-- You are preparing to finalize a milestone with commit/push.
-- You need verification of changed files, docs/test updates, and required tracking surfaces.
-- You need safe push guidance (no force push).
+## Objective
+Confirm required tracking surfaces are updated before/with commit push activity.
 
-## Do not trigger when
-- Implementation is still in progress.
-- You need a milestone gate verdict (`mtt-repo-milestone-review`).
-- You only need project-files export readiness or next milestone planning.
+## Preconditions
+- Milestone gate is already `SAFE TO MOVE ON`.
 
 ## Procedure
-1. Inspect `git status`, staged/unstaged diff summary, and changed tests/docs.
-2. Check required tracking surfaces based on `docs/codex/DOC_SYNC_MATRIX.md`.
-3. Run lightest sufficient validation for the changed scope (fast first, then changed/full only when needed).
-4. Prepare coherent milestone-aware commit message(s) scoped to completed work.
-5. Push safely to remote without force.
-6. Report commit hash(es), pushed branch, and validations run.
+1. Read `docs/codex/DOC_SYNC_MATRIX.md` and `docs/codex/STATUS.md`.
+2. Verify blocking tracking surfaces are current for the completed milestone.
+3. Confirm non-blocking items are listed as follow-ups.
+4. Report commit/push readiness and missing updates.
 
-## Output format
-- Change scope summary
-- Required tracking surfaces status
-- Validation commands + outcomes
-- Commit and push record
+## Output
+- tracking readiness status
+- missing blocking updates
+- non-blocking follow-up gaps
+- recommended commit/push next step

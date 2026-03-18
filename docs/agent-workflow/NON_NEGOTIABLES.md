@@ -128,3 +128,13 @@ When a conflict exists between the shared workflow layer and the Codex control-p
 the shared workflow layer wins unless the Codex-specific rule is intentionally narrower.
 
 _Evidence: `docs/codex/usage-prompts/0000-README.md`, all milestone/gate/commit prompts_
+
+---
+
+## 14. Do not modify local Claude control surfaces directly
+
+Do not modify `.claude/settings.json`, `.claude/settings.local.json`, `.git/info/exclude`,
+or create `.claude/commands/` — a PreToolUse hook blocks tool-based writes to these paths.
+Edit manually if intentional.
+
+_Evidence: `docs/agent-workflow/NON_NEGOTIABLES.md` (ai-dev-template v1.3.2 baseline)_
