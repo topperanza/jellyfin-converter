@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-settings.json",
+  "permissions": {
+    "allow": [
+      "Bash(bash scripts/check-fast.sh)",
+      "Bash(git:*)",
+      "Bash(grep -v '\\.agents/skills$')",
+      "Bash(grep -v '\\.claude/skills$')"
+    ],
+    "deny": [
+      "Write(.claude/settings.local.json)",
+      "Edit(.claude/settings.local.json)",
+      "MultiEdit(.claude/settings.local.json)",
+      "Write(.claude/settings.json)",
+      "Edit(.claude/settings.json)",
+      "MultiEdit(.claude/settings.json)",
+      "Write(.git/info/exclude)",
+      "Edit(.git/info/exclude)",
+      "MultiEdit(.git/info/exclude)",
+      "Bash(*.claude/settings.local.json*)",
+      "Bash(*.claude/settings.json*)",
+      "Bash(*.git/info/exclude*)",
+      "Write(.claude/hooks/guard-control-surfaces.sh)",
+      "Edit(.claude/hooks/guard-control-surfaces.sh)",
+      "MultiEdit(.claude/hooks/guard-control-surfaces.sh)",
+      "Bash(*.claude/hooks/guard-control-surfaces.sh*)"
+    ],
+    "defaultMode": "acceptEdits"
+  },
+  "sandbox": {
+    "enabled": true,
+    "autoAllowBashIfSandboxed": true,
+    "allowUnsandboxedCommands": false
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "bash .claude/hooks/guard-control-surfaces.sh"
+          }
+        ]
+      }
+    ]
+  }
+}
