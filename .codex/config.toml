@@ -1,0 +1,41 @@
+# .codex/config.toml — repo-scoped Codex baseline (share-safe, committed to Git)
+#
+# PURPOSE: Encodes project-level defaults that are safe to share.
+# SCOPE:   Applies to anyone cloning this repo. No secrets. No auth. No machine paths.
+#
+# USER-LEVEL config (model, API key, personal preferences) belongs in:
+#   ~/.codex/config.toml
+#   See docs/assistant-setup/codex.user.example.toml for a sanitized example.
+#
+# AUTH / STATE are local-only and never committed:
+#   ~/.codex/auth.json          ← never commit
+#   ~/.codex/session*           ← never commit
+#
+# SHARED INSTRUCTION SURFACE:
+#   AGENTS.md and docs/agent-workflow/* are the canonical shared instructions.
+#   This file controls runtime behavior only — not agent persona or workflow rules.
+
+
+# Marker files used to identify the project root.
+project_root_markers = [".git"]
+
+[workflow]
+mode = "milestone"
+validation_order = [
+  "narrow",
+  "bash scripts/check-fast.sh",
+  "bash scripts/check-changed.sh (if relevant)",
+  "bash scripts/check-full.sh (if justified)"
+]
+
+[guards]
+contract_scoped_gate = true
+narrow_blocker_closure = true
+recovery_only_full_repo_audit = true
+docs_project_files_downstream_only = true
+
+[docs]
+runbook = "docs/codex/RUNBOOK.md"
+doc_sync_matrix = "docs/codex/DOC_SYNC_MATRIX.md"
+cloud_env_checklist = "docs/codex/CLOUD_ENV_CHECKLIST.md"
+workflow_version = "docs/codex/WORKFLOW_VERSION.md"
