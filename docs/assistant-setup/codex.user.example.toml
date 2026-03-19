@@ -1,0 +1,23 @@
+# codex.user.example.toml — EXAMPLE ONLY
+#
+# This is a sanitized template for ~/.codex/config.toml (user-level Codex config).
+# Copy it to ~/.codex/config.toml and populate with your own values.
+#
+# DO NOT commit a populated copy of this file.
+# DO NOT add real API keys, tokens, or machine-specific paths here.
+#
+# Repo-scoped config lives in .codex/config.toml (already committed).
+# This file is for personal preferences that should not be shared.
+
+[user]
+# Your preferred model. Replace with the model ID you have access to.
+# model = "your-model-name"
+
+[api]
+# API key for your provider. Set via environment variable instead where possible.
+# api_key = "YOUR_API_KEY_HERE"
+
+[preferences]
+# Example personal preferences — uncomment and adjust as needed.
+# auto_approve = false
+# verbosity = "normal"
