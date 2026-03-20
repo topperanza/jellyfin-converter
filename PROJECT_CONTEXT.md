@@ -1,13 +1,13 @@
 # Project Context
 
 ## Current Task
-- Objective: propagate ai-dev-template v1.2.0 workflow baseline into jellyfin-converter
+- Objective: maintain the ai-dev-template v1.2.0 workflow baseline record in jellyfin-converter
 - Success criteria: all new workflow docs present, adapters thinned, naming drift fixed, check-fast passes
 - Out of scope: product changes, source code edits, docs/codex/usage-prompts/* changes, push
 
 ## Current State
 - Branch: main
-- Scaffold status: v1.2.0 propagation in progress
+- Scaffold status: v1.2.0 workflow baseline present
 - Baseline source: ~/github/ai-dev-template
 
 ## Preserved as-is
@@ -19,11 +19,11 @@
 - All source code, tests, scripts/codex/*, docs/codex/*, docs/project-files/*
 
 ## Verification
-- conformance check: pending
-- check-fast: pending
+- conformance check: not queued in this state snapshot
+- check-fast: not queued in this state snapshot
 
 ## Next Best Action
-Run `bash scripts/codex/check-workflow-conformance.sh`, then `bash scripts/check-fast.sh`. Confirm both PASS, then commit.
+No active task.
 
 ## Blockers
 None.

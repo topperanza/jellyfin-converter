@@ -7,9 +7,9 @@ No active task.
 main
 
 ## Scaffold status
-v1.2.0 workflow baseline propagation in progress.
+v1.2.0 workflow baseline present.
 
-## Files changed in this propagation
+## Files added/updated for the v1.2.0 workflow baseline
 - docs/agent-workflow/ADAPTER_CONTRACT.md — added (new)
 - docs/agent-workflow/CLOUD_TO_LOCAL_HANDOFF.md — added (new)
 - docs/agent-workflow/COMMIT_RELEASE.md — added (new)
@@ -30,4 +30,4 @@ v1.2.0 workflow baseline propagation in progress.
 None.
 
 ## Ready for local verification
-Pending — run the two validation commands above, confirm both PASS, then commit.
+No additional local verification queued for this state-doc cleanup.
