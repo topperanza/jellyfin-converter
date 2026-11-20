@@ -193,3 +193,41 @@ test_plan_external_bitmap_ignored_when_keep0() {
 
   assert_eq "" "$plan" "Expected empty plan when KEEP_BITMAP_SUBS=0"
 }
+
+test_plan_real_ffprobe_fallback_keeps_forced_subtitle() (
+  if ! type -P ffmpeg >/dev/null || ! type -P ffprobe >/dev/null; then
+    echo "SKIP: real subtitle fallback requires ffmpeg and ffprobe"
+    return 0
+  fi
+
+  # Use the real ffprobe and the discovery function from the module.
+  unset -f ffprobe
+  source "scripts/lib/media_filters.sh"
+
+  local tmp fixture raw video_probe plan
+  tmp="$(mktemp -d)" || fail "Could not create fixture directory"
+  trap 'rm -rf "$tmp"' EXIT
+  fixture="$tmp/sample.mkv"
+  printf '1\n00:00:00,000 --> 00:00:00,800\nSynthetic subtitle\n' >"$tmp/caption.srt"
+  command ffmpeg -nostdin -v error -f lavfi -i 'color=s=32x32:r=1:d=1' \
+    -i "$tmp/caption.srt" -map 0:v -map 1:s -map 1:s -map 1:s \
+    -c:v mpeg4 -c:s srt \
+    -metadata:s:s:0 language=eng -metadata:s:s:0 'title=English, main = primary' \
+    -metadata:s:s:1 language=rus -metadata:s:s:2 language=rus \
+    -disposition:s:0 default+hearing_impaired -disposition:s:1 forced -disposition:s:2 0 \
+    "$fixture" || fail "Could not mux synthetic subtitle fixture"
+
+  local SUB_LANGS=eng,ita
+  raw="$(probe_internal_subs "$fixture")"
+  assert_eq $'1|subrip|eng|English, main = primary|1|0|1\n2|subrip|rus||0|1|0\n3|subrip|rus||0|0|0' "$raw"
+
+  local expected_plan=$'int|1|eng|0|subrip|0\nint|2|rus|1|subrip|0'
+  plan="$(build_subtitle_plan "$fixture")" || fail "Fallback with no batched data failed"
+  assert_eq "$expected_plan" "$plan"
+
+  video_probe="$(command ffprobe -v error -select_streams v -show_streams -of flat "$fixture")" ||
+    fail "Could not probe synthetic video stream"
+  assert_contains "$video_probe" 'codec_type="video"'
+  plan="$(build_subtitle_plan "$fixture" "$video_probe")" || fail "Fallback with video-only batched data failed"
+  assert_eq "$expected_plan" "$plan"
+)

@@ -27,8 +27,6 @@ fi
 
 # shellcheck source=scripts/lib/compat.sh
 source "$SCRIPT_DIR/lib/compat.sh"
-# shellcheck source=scripts/lib/ffprobe.sh
-source "$SCRIPT_DIR/lib/ffprobe.sh"
 # shellcheck source=scripts/lib/ffmpeg.sh
 source "$SCRIPT_DIR/lib/ffmpeg.sh"
 # shellcheck source=scripts/lib/media_filters.sh

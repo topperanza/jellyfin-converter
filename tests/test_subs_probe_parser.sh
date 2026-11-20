@@ -17,8 +17,24 @@ printf 'dummy' >"$INPUT"
 cat >"$STUB_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
 if echo "$*" | grep -q -- "-select_streams s"; then
-  echo "0|subrip|eng|English SDH|1|0|0"
-  echo "1|hdmv_pgs_subtitle|rus|Main Forced|0|1|0"
+  cat <<'FLAT'
+streams.stream.0.index=0
+streams.stream.0.codec_name="subrip"
+streams.stream.0.codec_type="subtitle"
+streams.stream.0.disposition.default=1
+streams.stream.0.disposition.forced=0
+streams.stream.0.disposition.hearing_impaired=0
+streams.stream.0.tags.language="eng"
+streams.stream.0.tags.title="English SDH"
+streams.stream.1.index=1
+streams.stream.1.codec_name="hdmv_pgs_subtitle"
+streams.stream.1.codec_type="subtitle"
+streams.stream.1.disposition.default=0
+streams.stream.1.disposition.forced=1
+streams.stream.1.disposition.hearing_impaired=0
+streams.stream.1.tags.language="rus"
+streams.stream.1.tags.title="Main Forced"
+FLAT
   exit 0
 fi
 exit 0

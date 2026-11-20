@@ -34,9 +34,32 @@ src="${!#}"
 
 if echo "$*" | grep -q -- "-select_streams s"; then
   if echo "$src" | grep -q "withsubs"; then
-    echo "0|subrip|eng|English SDH|0|0"
-    echo "1|subrip|und|Director Commentary|0|0"
-    echo "2|subrip|rus|Russian Track|0|0"
+    cat <<'FLAT'
+streams.stream.0.index=0
+streams.stream.0.codec_name="subrip"
+streams.stream.0.codec_type="subtitle"
+streams.stream.0.disposition.default=0
+streams.stream.0.disposition.forced=0
+streams.stream.0.disposition.hearing_impaired=0
+streams.stream.0.tags.language="eng"
+streams.stream.0.tags.title="English SDH"
+streams.stream.1.index=1
+streams.stream.1.codec_name="subrip"
+streams.stream.1.codec_type="subtitle"
+streams.stream.1.disposition.default=0
+streams.stream.1.disposition.forced=0
+streams.stream.1.disposition.hearing_impaired=0
+streams.stream.1.tags.language="und"
+streams.stream.1.tags.title="Director Commentary"
+streams.stream.2.index=2
+streams.stream.2.codec_name="subrip"
+streams.stream.2.codec_type="subtitle"
+streams.stream.2.disposition.default=0
+streams.stream.2.disposition.forced=0
+streams.stream.2.disposition.hearing_impaired=0
+streams.stream.2.tags.language="rus"
+streams.stream.2.tags.title="Russian Track"
+FLAT
   fi
   exit 0
 fi

@@ -3,6 +3,8 @@
 LIB_DIR="$(cd -- "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # shellcheck source=scripts/lib/compat.sh
 source "$LIB_DIR/compat.sh"
+# shellcheck source=scripts/lib/ffprobe.sh
+source "$LIB_DIR/ffprobe.sh"
 
 # Language mapping with English/Italian focus
 map_lang() {
@@ -60,9 +62,11 @@ is_commentary_title() {
 
 probe_internal_subs() {
   local src="$1"
-  ffprobe -v error -select_streams s \
-    -show_entries stream=index,codec_name:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired \
-    -of csv=p=0:s='|' "$src" < /dev/null 2>/dev/null || echo ""
+  local probe_data
+  probe_data="$(ffprobe -v error -select_streams s \
+    -show_entries stream=index,codec_name,codec_type:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired \
+    -of flat "$src" < /dev/null 2>/dev/null)" || return 0
+  probe_internal_subs_from_data "$probe_data"
 }
 
 probe_internal_subs_from_data() {
@@ -70,22 +74,25 @@ probe_internal_subs_from_data() {
   local idxs
   idxs=$(probe_get_stream_indices "$probe_data" "subtitle")
   
-  # Iterate line by line
+  # A stream's flat key ordinal can differ from its index after -select_streams.
   if [[ -n "$idxs" ]]; then
-    while read -r idx; do
-      [[ -z "$idx" ]] && continue
+    local ordinal
+    while read -r ordinal; do
+      local idx
+      idx=$(probe_get_stream_val "$probe_data" "$ordinal" "index")
+      [[ "$idx" =~ ^[0-9]+$ ]] || continue
       local codec
-      codec=$(probe_get_stream_val "$probe_data" "$idx" "codec_name")
+      codec=$(probe_get_stream_val "$probe_data" "$ordinal" "codec_name")
       local lang
-      lang=$(probe_get_stream_val "$probe_data" "$idx" "tags.language")
+      lang=$(probe_get_stream_val "$probe_data" "$ordinal" "tags.language")
       local title
-      title=$(probe_get_stream_val "$probe_data" "$idx" "tags.title")
+      title=$(probe_get_stream_val "$probe_data" "$ordinal" "tags.title")
       local is_default
-      is_default=$(probe_get_stream_val "$probe_data" "$idx" "disposition.default")
+      is_default=$(probe_get_stream_val "$probe_data" "$ordinal" "disposition.default")
       local is_forced
-      is_forced=$(probe_get_stream_val "$probe_data" "$idx" "disposition.forced")
+      is_forced=$(probe_get_stream_val "$probe_data" "$ordinal" "disposition.forced")
       local is_hi
-      is_hi=$(probe_get_stream_val "$probe_data" "$idx" "disposition.hearing_impaired")
+      is_hi=$(probe_get_stream_val "$probe_data" "$ordinal" "disposition.hearing_impaired")
       
       # Format: index|codec|lang|title|default|forced|hearing_impaired
       echo "${idx}|${codec}|${lang}|${title}|${is_default}|${is_forced}|${is_hi}"

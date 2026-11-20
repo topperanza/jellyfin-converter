@@ -41,9 +41,16 @@ src="${!#}"
 
 # Mock internal subtitles
 if echo "$*" | grep -q -- "-select_streams s"; then
-  # index|codec|lang|title|default|forced|hearing_impaired
-  # Stream 2 is the subtitle (0=video, 1=audio assumed)
-  echo "2|subrip|eng|English|0|0|0" 
+  cat <<'FLAT'
+streams.stream.0.index=2
+streams.stream.0.codec_name="subrip"
+streams.stream.0.codec_type="subtitle"
+streams.stream.0.disposition.default=0
+streams.stream.0.disposition.forced=0
+streams.stream.0.disposition.hearing_impaired=0
+streams.stream.0.tags.language="eng"
+streams.stream.0.tags.title="English"
+FLAT
   exit 0
 fi
 
