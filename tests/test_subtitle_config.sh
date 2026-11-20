@@ -33,9 +33,32 @@ if echo "$*" | grep -q -- "-select_streams s"; then
   # 2: Eng PGS (Bitmap)
   # 3: Spa SRT (Text)
   # 4: Rus SRT (Text)
-  echo "2|hdmv_pgs_subtitle|eng|English|0|0|0"
-  echo "3|subrip|spa|Spanish|0|0|0"
-  echo "4|subrip|rus|Russian|0|0|0"
+  cat <<'FLAT'
+streams.stream.0.index=2
+streams.stream.0.codec_name="hdmv_pgs_subtitle"
+streams.stream.0.codec_type="subtitle"
+streams.stream.0.disposition.default=0
+streams.stream.0.disposition.forced=0
+streams.stream.0.disposition.hearing_impaired=0
+streams.stream.0.tags.language="eng"
+streams.stream.0.tags.title="English"
+streams.stream.1.index=3
+streams.stream.1.codec_name="subrip"
+streams.stream.1.codec_type="subtitle"
+streams.stream.1.disposition.default=0
+streams.stream.1.disposition.forced=0
+streams.stream.1.disposition.hearing_impaired=0
+streams.stream.1.tags.language="spa"
+streams.stream.1.tags.title="Spanish"
+streams.stream.2.index=4
+streams.stream.2.codec_name="subrip"
+streams.stream.2.codec_type="subtitle"
+streams.stream.2.disposition.default=0
+streams.stream.2.disposition.forced=0
+streams.stream.2.disposition.hearing_impaired=0
+streams.stream.2.tags.language="rus"
+streams.stream.2.tags.title="Russian"
+FLAT
   exit 0
 fi
 case "$*" in
@@ -131,7 +154,16 @@ cat >"$STUB_BIN/ffprobe" <<'EOF'
 #!/usr/bin/env bash
 if echo "$*" | grep -q -- "-select_streams s"; then
   # 2: Eng SRT (Internal)
-  echo "2|subrip|eng|English|0|0|0"
+  cat <<'FLAT'
+streams.stream.0.index=2
+streams.stream.0.codec_name="subrip"
+streams.stream.0.codec_type="subtitle"
+streams.stream.0.disposition.default=0
+streams.stream.0.disposition.forced=0
+streams.stream.0.disposition.hearing_impaired=0
+streams.stream.0.tags.language="eng"
+streams.stream.0.tags.title="English"
+FLAT
   exit 0
 fi
 # Passthrough for others

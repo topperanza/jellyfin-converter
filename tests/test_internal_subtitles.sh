@@ -62,10 +62,33 @@ src="${!#}"
   *-select_streams*0:0*show_entries*stream=tags:title*)
     echo "Main"
     ;;
-  *-select_streams*s*show_entries*stream=index,codec_name:stream_tags=language,title:stream_disposition=default,forced,hearing_impaired*)
-    echo "2|subrip|eng|English SDH|0|0|1"
-    echo "3|hdmv_pgs_subtitle|rus|Main Forced|0|1|0"
-    echo "4|subrip|rus|Regular|0|0|0"
+  *-select_streams*s*' -of flat '*)
+    cat <<'FLAT'
+streams.stream.0.index=2
+streams.stream.0.codec_name="subrip"
+streams.stream.0.codec_type="subtitle"
+streams.stream.0.disposition.default=0
+streams.stream.0.disposition.forced=0
+streams.stream.0.disposition.hearing_impaired=1
+streams.stream.0.tags.language="eng"
+streams.stream.0.tags.title="English SDH"
+streams.stream.1.index=3
+streams.stream.1.codec_name="hdmv_pgs_subtitle"
+streams.stream.1.codec_type="subtitle"
+streams.stream.1.disposition.default=0
+streams.stream.1.disposition.forced=1
+streams.stream.1.disposition.hearing_impaired=0
+streams.stream.1.tags.language="rus"
+streams.stream.1.tags.title="Main Forced"
+streams.stream.2.index=4
+streams.stream.2.codec_name="subrip"
+streams.stream.2.codec_type="subtitle"
+streams.stream.2.disposition.default=0
+streams.stream.2.disposition.forced=0
+streams.stream.2.disposition.hearing_impaired=0
+streams.stream.2.tags.language="rus"
+streams.stream.2.tags.title="Regular"
+FLAT
     ;;
   *-select_streams*s*show_entries*stream=index:stream_tags=language,title:stream_disposition=forced*)
     echo "2|eng|Subtitle (eng)|0"

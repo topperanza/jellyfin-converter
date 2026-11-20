@@ -1,6 +1,10 @@
 # Codex Run Status
 
-_Last updated: 2026-03-14_
+_Last updated: 2026-11-20_
+
+## Local regression fix (2026-11-20)
+
+The forced-subtitle fallback fix passed local verification on `fix/ffprobe-forced-subtitle-fallback`. The real ffprobe regression test failed against the original CSV fallback and now passes for both empty and video-only batched probe data. A real conversion preserved stream 2 as forced Russian SubRip, after normal English SubRip, and excluded the normal Russian track. The full harness and repository gates passed. See [HANDOFF.md](../../HANDOFF.md) for the exact commands, results, and publication handoff.
 
 ## Current task snapshot
 - Completed **MILESTONE-1** as planning/review-only (no runtime code changes).
